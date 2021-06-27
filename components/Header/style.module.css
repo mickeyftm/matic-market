@@ -1,0 +1,81 @@
+.navBar {
+  width: 100%;
+  height: var(--header-height);
+  border-bottom: 1px solid #eaeaea;
+  display: flex;
+  align-items: center;
+}
+
+.branding {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-left: 10px;
+}
+
+.branding span {
+  font-family: baumans;
+  font-size: 20px;
+  margin-right: 20px;
+}
+
+.navList {
+  display: flex;
+  list-style-type:none;
+  margin-right: 30px;
+}
+
+.navItem {
+  font-size: var(--font-size-default);
+  margin-right: 25px;
+  font-family: ubuntu-light;
+  color: var(--font-dim-color);
+}
+
+.navItem:hover {
+  opacity: 0.5;
+  font-weight: 500;
+}
+
+.navActiveItem {
+  font-weight: bold;
+  font-family: ubuntu-regular;
+  font-weight: 500;
+  color: var(--primary-color);
+  position: relative;
+}
+
+.navActiveItem:hover {
+  color: var(--primary-color);
+  opacity: 1;
+}
+
+/* .navActiveItem::after {
+  display: block;
+  content: '';
+  width: 80%;
+  height: 3px;
+  background: var(--primary-color);
+  position: absolute;
+  bottom: -10px;
+  left: 10%;
+  border-radius: 10px;
+  animation: fadeInFromNone 0.5s ease-out;
+} */
+
+@keyframes fadeInFromNone {
+  0% {
+      display: none;
+      opacity: 0;
+  }
+
+  50% {
+      display: block;
+      opacity: 0.6;
+  }
+
+  100% {
+      display: block;
+      opacity: 1;
+  }
+}

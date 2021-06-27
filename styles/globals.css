@@ -1,0 +1,40 @@
+@import 'constants.css';
+@import 'reset.css';
+
+@font-face {
+  font-family: "ubuntu-light";
+  src: url("/fonts/Ubuntu-Light.ttf");
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "ubuntu-regular";
+  src: url("/fonts/Ubuntu-Regular.ttf");
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "baumans";
+  src: url("/fonts/Baumans-Regular.ttf");
+  font-style: normal;
+  font-display: swap;
+}
+
+html,
+body {
+  padding: 0;
+  margin: 0;
+  font-family: ubuntu-regular, -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, Oxygen,
+    Ubuntu, Cantarell, Fira Sans, Droid Sans, Helvetica Neue, sans-serif;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+* {
+  box-sizing: border-box;
+}

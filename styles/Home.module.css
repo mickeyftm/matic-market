@@ -1,0 +1,8 @@
+.main {
+  --compensation-in-px: (var(--footer-height) + var(--header-height));
+  --height: calc(100vh - var(--compensation-in-px));
+  min-height: var(--height);
+  height: var(--height);
+  padding-left: 15px; 
+  padding-right: 15px;
+}

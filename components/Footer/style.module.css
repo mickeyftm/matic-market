@@ -1,0 +1,20 @@
+.footer {
+    width: 100%;
+    height: var(--footer-height);
+    border-top: 1px solid #eaeaea;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.footer a {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-grow: 1;
+}
+
+.footerBrandingImage {
+    padding-left: 10px !important;
+    padding-right: 10px !important;
+}
