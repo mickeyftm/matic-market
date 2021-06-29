@@ -1,4 +1,4 @@
-import { addClasses } from '@/utils/helpers';
+import { addClasses } from '@/utils/Helpers';
 import styles from './style.module.css';
 import { ROUTES } from '@/constants/routes';
 import { useRouter } from 'next/router';
@@ -11,20 +11,22 @@ export const Header = () => {
     const isActive = (routeToCheck) => route.pathname === routeToCheck;
     return (
         <nav className={styles.navBar}>
-            <a href={"/"}>
-                <div className={styles.branding}>
-                    <Image
-                        src="/images/logo.svg"
-                        className={styles.footerBrandingImage}
-                        alt="Logo"
-                        height={60}
-                        width={60}
-                    />
-                    <span>
-                        {APP_NAME}
-                    </span>
-                </div>
-            </a>
+            <Link href={'/'}>
+                <a>
+                    <div className={styles.branding}>
+                        <Image
+                            src="/images/logo.svg"
+                            className={styles.footerBrandingImage}
+                            alt="Logo"
+                            height={60}
+                            width={60}
+                        />
+                        <span>
+                            {APP_NAME}
+                        </span>
+                    </div>
+                </a>
+            </Link>
             <ul className={styles.navList}>
                 {
                     ROUTES.map( item => {

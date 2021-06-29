@@ -1,0 +1,106 @@
+.lssContainer {
+    width: 33%;
+    border: 1px solid var(--border-color);
+    padding: 15px;
+    border-radius: 15px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    background-color: var(--color-white);
+    transition: all 0.5s ease-out;
+}
+
+.lssHeading {
+    display: flex;
+    width: 100%;
+    justify-content: space-between;
+    margin-bottom: 10px;
+}
+
+.lssHeading > span {
+    padding: 5px;
+}
+
+.lssHeadingMain {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+}
+
+.lssHeadingMain > span {
+    margin-left: 10px;
+}
+
+.lssInput {
+    border: 1px solid var(--border-color);
+    font-size: 18px;
+    width: 100%;
+    padding: 15px;
+    border-radius: 15px;
+    outline: none;
+}
+
+.lssListHeaders {
+    margin-top: 15px;
+    display: flex;
+    justify-content: space-between;
+    width: 100%;
+    font-size: 16px;
+    padding: 5px;
+    color: var(--font-dim-color);
+}
+
+.lssList {
+    width: 100%;
+    height: 42vh;
+    overflow-y: scroll;
+    margin-top: 10px;
+    border-top: 1px solid var(--border-color);
+    padding-top: 5px;
+}
+
+.lssListItem {
+    display: flex;
+    width: 100%;
+    justify-content: space-between;
+    font-size: 16px;
+    padding: 15px;
+    align-items: center;
+    color: var(--font-dim-color);
+}
+
+.lssListItem:hover, .lssListItem:focus {
+    cursor: pointer;
+    background-color: var(--primary-dim-color);
+}
+
+.lssListItem > div {
+    display: flex;
+    align-items: center;
+}
+
+.lssListItem > div > p {
+    display: flex;
+    flex-direction: column;
+    margin-left: 10px;
+}
+
+.lssListItemIcon {
+    padding: 1px !important;
+    border-radius: 50px;
+    background-color: #efefef;
+}
+
+.lssListItemName {
+    font-size: 11px;
+    margin-top: 5px;
+    color: #a5a5a5;
+}
+
+.lssHelpIcon:hover, .lssCloseIcon:hover {
+    opacity: 0.5;
+    transition: opacity 0.3s ease;
+    cursor: pointer;
+}

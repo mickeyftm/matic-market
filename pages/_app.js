@@ -1,5 +1,6 @@
 import { Footer } from '@/components/Footer';
 import { Header } from '@/components/Header';
+import { Overlay } from '@/components/Overlay';
 import '../styles/globals.css';
 import styles from '../styles/Home.module.css';
 
@@ -13,6 +14,8 @@ function MyApp({ Component, pageProps }) {
       </main>
 
       <Footer />
+
+      <Overlay />
     </div>
   );
 }

@@ -12,3 +12,5 @@ export const addClasses = ( classes ) => {
 
     return classString;
 }
+
+export const noop = () => null;

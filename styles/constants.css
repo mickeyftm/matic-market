@@ -6,8 +6,29 @@
     --header-height: 70px;
     --footer-height: 40px;
 
-    /* Colors */
-    --font-dim-color: #606060;
-    --font-color: #101010;
-    --primary-color: #9107ed;
+    --color-white: #fff;
+    --color-black: #000;
+
+    --border-color: #dfdfdf;
+
+    /* Light Theme */
+    --light-font-dim-color: #606060;
+    --light-font-color: #101010;
+    --light-primary-color: #8247e5;
+    --light-primary-dim-color: #eee7fa;
+
+    /* Dark Theme TODO */
+
+}
+
+.light-theme {
+    --font-dim-color: var(--light-font-dim-color);
+    --font-color: var(--light-font-color);
+    --primary-color: var(--light-primary-color);
+    --primary-dim-color: var(--light-primary-dim-color);
+}
+
+/* Keep it below light theme so that we can switch theme */
+.dark-theme {
+    
 }

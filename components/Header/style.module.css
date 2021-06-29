@@ -28,26 +28,28 @@
 .navItem {
   font-size: var(--font-size-default);
   margin-right: 25px;
-  font-family: ubuntu-light;
-  color: var(--font-dim-color);
+  /* font-family: ubuntu-light; */
+  /* color: var(--font-dim-color); */
 }
 
-.navItem:hover {
+.navItem:hover, .navItem:focus {
   opacity: 0.5;
-  font-weight: 500;
+  font-family: ubuntu-light;
 }
 
 .navActiveItem {
   font-weight: bold;
   font-family: ubuntu-regular;
-  font-weight: 500;
+  font-weight: 700;
   color: var(--primary-color);
   position: relative;
 }
 
-.navActiveItem:hover {
+.navActiveItem:hover, .navActiveItem:focus {
   color: var(--primary-color);
   opacity: 1;
+  font-family: ubuntu-regular;
+  background-image: unset;
 }
 
 /* .navActiveItem::after {
