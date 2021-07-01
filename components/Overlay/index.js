@@ -31,7 +31,7 @@ export const Overlay = () => {
         setClasses([styles.overlay, styles.fadeOut]);
         setTimeout( () => {
             setVisible(false);
-        }, 200);
+        }, 150);
     }
 
     const setVisibility = ({ isVisible, type, props }) => {

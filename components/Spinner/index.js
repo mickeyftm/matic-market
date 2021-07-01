@@ -1,8 +1,8 @@
 import styles from './style.module.css';
 import { addClasses } from '@/utils/Helpers';
 
-export const Spinner = ({ size }) => {
-    const classes = [ styles.loader ];
+export const Spinner = ({ size, className }) => {
+    const classes = [ styles.loader, className ];
 
     if( size === 'MINI') {
         classes.push( styles.loaderMini );

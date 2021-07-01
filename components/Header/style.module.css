@@ -4,6 +4,12 @@
   border-bottom: 1px solid #eaeaea;
   display: flex;
   align-items: center;
+  justify-content: space-between;
+}
+
+.left, .right {
+  display: flex;
+  align-items: center;
 }
 
 .branding {

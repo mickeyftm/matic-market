@@ -1,15 +1,29 @@
-import { useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import Image from 'next/image';
 import styles from "./style.module.css";
-import { tokens } from '@/constants/globals';
 import { Spinner } from '@/components/Spinner';
-import { publish } from '@/utils/EventBus';
-import { TOGGLE_OVERLAY_VISIBILITY } from '@/constants/events';
+import { addClasses } from '@/utils/Helpers';
 
-export const ListWithSearchAndSort = ({ onTokenSelected, closeOverlay }) => {
+export const ListWithSearchAndSort = ({ onItemSelected, title, className, headerName, headerValue, getValue, queryPlaceholder, disableKeys, fetchListMap, closeOverlay }) => {
     const [query, setQuery] = useState("");
-    const [isLoading, setLoading] = useState(false);
-    const [listItems, setListItems] = useState(Object.keys(tokens));
+    const [isLoading, setLoading] = useState(true);
+    const [listItems, setListItems] = useState([]);
+    const [listMap, setListMap] = useState({});
+
+    useEffect( () => {
+        (async () => {
+            const _listMap = await fetchListMap();
+            setListMap(_listMap);
+            setLoading(false);
+            filterBasedOnValue(Object.keys(_listMap), _listMap);
+        })()
+    }, [fetchListMap, filterBasedOnValue]);
+
+    const filterBasedOnValue = useCallback((filteredListItems, listMap) => {
+        const withValue = filteredListItems.filter( item => getValue(listMap[item]) !== '0' );
+        const withoutValue = filteredListItems.filter( item => getValue(listMap[item]) === '0' );
+        setListItems([ ...withValue, ...withoutValue]);
+    }, [getValue]);
 
     const onQueryChange = (event) => {
         const _query = event.target.value;
@@ -17,14 +31,14 @@ export const ListWithSearchAndSort = ({ onTokenSelected, closeOverlay }) => {
         setLoading(false);
 
         const lowerCaseQuery = _query.toLowerCase().trim();
-        const _filteredItems = Object.keys(tokens).filter( _token => {
+        const _filteredItems = Object.keys(listMap).filter( _item => {
             if(lowerCaseQuery === '') return true;
 
-            const token = tokens[_token];
+            const item = listMap[_item];
             if(
-                token.name.toLowerCase().includes(lowerCaseQuery) ||
-                token.symbol.toLowerCase().includes(lowerCaseQuery) ||
-                token.address.toLowerCase() === lowerCaseQuery
+                item.name.toLowerCase().includes(lowerCaseQuery) ||
+                item.symbol.toLowerCase().includes(lowerCaseQuery) ||
+                item.address.toLowerCase() === lowerCaseQuery
             ) {
                 return true;
             }
@@ -32,15 +46,15 @@ export const ListWithSearchAndSort = ({ onTokenSelected, closeOverlay }) => {
         });
 
         if(_filteredItems.length === 0 && lowerCaseQuery.includes('0x')){
-            // hit some API to check for the token
+            // hit some api to fetch the search result
             setLoading(true);
         } else {
-            setListItems(_filteredItems);
+            filterBasedOnValue(_filteredItems, listMap);
         }
     };
 
-    const onItemClick = (token) => {
-        onTokenSelected && onTokenSelected(token);
+    const onItemClick = (item) => {
+        onItemSelected && onItemSelected(item);
         onCloseIconClick();
     }
 
@@ -49,10 +63,10 @@ export const ListWithSearchAndSort = ({ onTokenSelected, closeOverlay }) => {
     }
 
     return (
-        <div className={styles.lssContainer}>
+        <div className={addClasses([styles.lssContainer, className])}>
             <div className={styles.lssHeading}>
                 <h3 className={styles.lssHeadingMain}>
-                    {"Search a token"}
+                    {title}
                     <span>
                         <Image
                             className={styles.lssHelpIcon}
@@ -75,7 +89,7 @@ export const ListWithSearchAndSort = ({ onTokenSelected, closeOverlay }) => {
             </div>
 
             <input
-                placeholder={'Search by name or Paste token address'}
+                placeholder={queryPlaceholder}
                 value={query}
                 autoFocus={true}
                 onChange={onQueryChange}
@@ -83,17 +97,18 @@ export const ListWithSearchAndSort = ({ onTokenSelected, closeOverlay }) => {
             />
 
             <div className={styles.lssListHeaders}>
-                <span>{'Token Symbol'}</span>
-                <span>{'Balance'}</span>
+                <span>{headerName}</span>
+                <span>{headerValue}</span>
             </div>
 
             <ul className={styles.lssList}>
                 {
-                    isLoading ? <Spinner size={'MEDIUM'} />
+                    isLoading ? <Spinner className={styles.spinner} size={'MEDIUM'} />
                     : listItems.map( _item => {
-                        const item = tokens[_item];
+                        const isDisabled = disableKeys.includes(_item);
+                        const item = listMap[_item];
                         return(
-                            <li className={styles.lssListItem} key={item.address} onClick={() => onItemClick(item)}>
+                            <li className={addClasses([styles.lssListItem, isDisabled && styles.lssListItemDisabled])} key={item.address} onClick={() => onItemClick(item)}>
                                 <div>
                                     <Image
                                         className={styles.lssListItemIcon}
@@ -109,7 +124,7 @@ export const ListWithSearchAndSort = ({ onTokenSelected, closeOverlay }) => {
                                 </div>
                 
                                 {/* We need to fetch this information from wallet */}
-                                <span>0</span>
+                                <span>{getValue ? getValue(item) : '0' }</span>
                             </li>
                         );
                     })
