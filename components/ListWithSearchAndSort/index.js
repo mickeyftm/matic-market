@@ -2,39 +2,45 @@ import { useEffect, useState, useCallback } from 'react';
 import Image from 'next/image';
 import styles from "./style.module.css";
 import { Spinner } from '@/components/Spinner';
-import { addClasses } from '@/utils/Helpers';
+import { addClasses, fromGwei, noop } from '@/utils/Helpers';
+import { getERC20TokenDetails } from '@/utils/Accounts';
 
-export const ListWithSearchAndSort = ({ onItemSelected, title, className, headerName, headerValue, getValue, queryPlaceholder, disableKeys, fetchListMap, closeOverlay }) => {
+export const ListWithSearchAndSort = ({ allowExternalSearch = true, onItemSelected, title, className, headerName, headerValue, getValue = noop, queryPlaceholder, disableKeys = [], fetchListMap, closeOverlay }) => {
     const [query, setQuery] = useState("");
-    const [isLoading, setLoading] = useState(true);
+    const [isLoading, setLoading] = useState(false);
     const [listItems, setListItems] = useState([]);
     const [listMap, setListMap] = useState({});
 
     useEffect( () => {
         (async () => {
+            setLoading(true);
             const _listMap = await fetchListMap();
             setListMap(_listMap);
             setLoading(false);
-            filterBasedOnValue(Object.keys(_listMap), _listMap);
+            onQueryChange(null, _listMap);
         })()
-    }, [fetchListMap, filterBasedOnValue]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
 
-    const filterBasedOnValue = useCallback((filteredListItems, listMap) => {
-        const withValue = filteredListItems.filter( item => getValue(listMap[item]) !== '0' );
-        const withoutValue = filteredListItems.filter( item => getValue(listMap[item]) === '0' );
+    const sortBasedOnValue = useCallback((itemsList, listMap) => {
+        const withValue = itemsList.filter( item => getValue(listMap[item]) !== '0' );
+        const withoutValue = itemsList.filter( item => getValue(listMap[item]) === '0' );
         setListItems([ ...withValue, ...withoutValue]);
     }, [getValue]);
 
-    const onQueryChange = (event) => {
-        const _query = event.target.value;
-        setQuery(_query);
-        setLoading(false);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    const onQueryChange = async (event, listMapVal = listMap) => {
+        const _query = event ? event.target.value : '';
+        
+        if(_query && _query === query) return;
 
+        setQuery(_query);
+        setLoading(true);
         const lowerCaseQuery = _query.toLowerCase().trim();
-        const _filteredItems = Object.keys(listMap).filter( _item => {
+        const _filteredItems = Object.keys(listMapVal).filter( _item => {
             if(lowerCaseQuery === '') return true;
 
-            const item = listMap[_item];
+            const item = listMapVal[_item];
             if(
                 item.name.toLowerCase().includes(lowerCaseQuery) ||
                 item.symbol.toLowerCase().includes(lowerCaseQuery) ||
@@ -45,12 +51,23 @@ export const ListWithSearchAndSort = ({ onItemSelected, title, className, header
             return false;
         });
 
-        if(_filteredItems.length === 0 && lowerCaseQuery.includes('0x')){
-            // hit some api to fetch the search result
+        if(allowExternalSearch && _filteredItems.length === 0 ){
             setLoading(true);
+            const _address = lowerCaseQuery;
+            const details = await getERC20TokenDetails(_address);
+            if(details) {
+                setListItems([_address]);
+                setListMap({
+                    ...listMap,
+                    [_address]: details
+                });
+            } else {
+                setListItems([]);
+            }
         } else {
-            filterBasedOnValue(_filteredItems, listMap);
+            sortBasedOnValue(_filteredItems, listMapVal);
         }
+        setLoading(false);
     };
 
     const onItemClick = (item) => {
@@ -77,15 +94,18 @@ export const ListWithSearchAndSort = ({ onItemSelected, title, className, header
                         />
                     </span>
                 </h3>
-                <span onClick={onCloseIconClick}>
-                    <Image
-                        className={styles.lssCloseIcon}
-                        width={20}
-                        height={20}
-                        src={'/images/cross.svg'}
-                        alt={'Close'}
-                    />
-                </span>
+                {
+                   closeOverlay && 
+                    <span onClick={onCloseIconClick}>
+                        <Image
+                            className={styles.lssCloseIcon}
+                            width={20}
+                            height={20}
+                            src={'/images/cross.svg'}
+                            alt={'Close'}
+                        />
+                    </span>
+                }
             </div>
 
             <input
@@ -107,6 +127,7 @@ export const ListWithSearchAndSort = ({ onItemSelected, title, className, header
                     : listItems.map( _item => {
                         const isDisabled = disableKeys.includes(_item);
                         const item = listMap[_item];
+                        const balance = item.balance ? fromGwei(item.balance, item.decimals) : getValue ? getValue(item) : '0';
                         return(
                             <li className={addClasses([styles.lssListItem, isDisabled && styles.lssListItemDisabled])} key={item.address} onClick={() => onItemClick(item)}>
                                 <div>
@@ -114,7 +135,7 @@ export const ListWithSearchAndSort = ({ onItemSelected, title, className, header
                                         className={styles.lssListItemIcon}
                                         width={25}
                                         height={25}
-                                        src={item.logoURI}
+                                        src={item.logoURI || '/images/help-circle.svg'}
                                         alt={item.name}
                                     />
                                     <p>
@@ -122,9 +143,7 @@ export const ListWithSearchAndSort = ({ onItemSelected, title, className, header
                                         <span className={styles.lssListItemName}>{item.name}</span>
                                     </p>
                                 </div>
-                
-                                {/* We need to fetch this information from wallet */}
-                                <span>{getValue ? getValue(item) : '0' }</span>
+                                <span>{balance}</span>
                             </li>
                         );
                     })

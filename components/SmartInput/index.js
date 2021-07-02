@@ -4,15 +4,17 @@ import { TOGGLE_OVERLAY_VISIBILITY } from '@/constants/events';
 import styles from './style.module.css';
 import { Icon } from '@/components/Icon';
 import { OVERLAY_TYPE_WITH_TOKEN_LIST } from '@/constants/types';
-import { addClasses } from '@/utils/Helpers';
+import { addClasses, fromGwei, isNegative } from '@/utils/Helpers';
 import Image from 'next/image';
 import axios from 'axios';
 import { FETCH_TOKEN_LIST } from '@/constants/urls';
+import { MIN_MATIC_AMOUNT, POLYGON_TOKEN_ADDRESS } from '@/constants/globals';
 
-export const SmartInput = ({ label, readOnly, balances, disableKeys = [], amount : amountVal, onAmountChanged, selectedToken: selectedTokenVal = null, onTokenChanged }) => {
+export const SmartInput = ({ label, readOnly, balances, fetchBalances, disableKeys = [], amount : amountVal, onAmountChanged, selectedToken: selectedTokenVal = null, onTokenChanged }) => {
     const [amount, setAmount] = useState(amountVal || '');
     const [selectedToken, setSelectedToken] = useState(selectedTokenVal);
-    const onlyNumberRegex = /^\d*\.?\d*$/
+    const [tokenListMap, setTokenListMap] = useState(null);
+    const onlyNumberRegex = /^\d*\.?\d*$/;
 
     useEffect( ()=> {
         setSelectedToken(selectedTokenVal);
@@ -33,10 +35,24 @@ export const SmartInput = ({ label, readOnly, balances, disableKeys = [], amount
     const onMaxClick =  () => {
         if(readOnly) return;
 
+        if( selectedToken.address.toLowerCase() === POLYGON_TOKEN_ADDRESS) {
+            const token = balances[selectedToken.address];
+            const _amount = token ? fromGwei(token.value, token.decimals, null, MIN_MATIC_AMOUNT) : '';
+            if(isNegative(_amount)) {
+                setAmount('0');
+                onAmountChanged && onAmountChanged('0');
+            } else {
+                setAmount(_amount);
+                onAmountChanged && onAmountChanged(_amount);
+            }
+            return;
+        }
+        
         if(selectedToken) {
             const token = balances[selectedToken.address];
-            setAmount(token ? token.balance : '');
-            onAmountChanged && onAmountChanged(token ? token.balance : '');
+            const _amount = token ? fromGwei(token.value, token.decimals, null) : '';
+            setAmount(_amount);
+            onAmountChanged && onAmountChanged(_amount);
         }
     };
 
@@ -47,17 +63,27 @@ export const SmartInput = ({ label, readOnly, balances, disableKeys = [], amount
         onAmountChanged && onAmountChanged('');
     }
 
-    const fetchTokenList = async () => {
+    const getTokenList = async () => {
         try {
             const { data : response } = await axios.get(FETCH_TOKEN_LIST);
             if(response.success) {
+                setTokenListMap(response.data.tokens);
                 return response.data.tokens;
             }
         } catch {}
         return {};
     }
+
+    const fetchTokenList = async () => {
+        if(tokenListMap){
+            getTokenList();
+            return tokenListMap;
+        }
+        return getTokenList();
+    }
     
     const openTokenList =  () => {
+        fetchBalances && fetchBalances();
         publish(TOGGLE_OVERLAY_VISIBILITY, {
             isVisible: true,
             type: OVERLAY_TYPE_WITH_TOKEN_LIST,
@@ -112,7 +138,7 @@ export const SmartInput = ({ label, readOnly, balances, disableKeys = [], amount
                                     className={styles.selectedTokenIcon}
                                     width={25}
                                     height={25}
-                                    src={selectedToken.logoURI}
+                                    src={selectedToken.logoURI || '/images/help-circle.svg'}
                                     alt={selectedToken.name}
                                 />
                                 </div>

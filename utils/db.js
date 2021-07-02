@@ -1,6 +1,6 @@
 const {MongoClient} = require('mongodb');
 
-const Collections = {
+export const Collections = {
     COLLECTION_APPROVALS: 'approvals',
     COLLECTION_LOGS: 'logs',
 };
@@ -20,10 +20,9 @@ export const initDB = async () => {
 	} catch (error) {
 		console.log('--> Error occured while connecting DB ' + error);
 	}
-    return _DB_INSTANCE_;
 }
 
-export const insertIntoCollection = async (data, collectionName, _DB_INSTANCE_) => {
+export const insertIntoCollection = async (data, collectionName) => {
 	const collection = _DB_INSTANCE_.collection(collectionName);
 	return await collection.insertOne({ ...data, createdAt: new Date(Date.now()).toISOString() });
 }
@@ -48,8 +47,3 @@ export const addWalletTokenAddressPair = async (walletAddress, tokenAddress, tra
 		transectionId
 	});
 }
-
-// const heartBeat = async ( workerId ) => {
-// 	const collection = _DB_INSTANCE_.collection(Collections.COLLECTION_WORKERS)
-//     return await collection.updateOne({ workerId }, { $set : { lastSeen : new Date().getTime() } } );
-// }

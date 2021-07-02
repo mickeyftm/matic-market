@@ -6,6 +6,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { APP_NAME } from "@/constants/globals";
 import { Wallet } from '@/components/Wallet';
+import { Pending } from '@/components/Pending';
 
 export const Header = () => {
   const route = useRouter();
@@ -44,6 +45,7 @@ export const Header = () => {
       </div>
 
       <div className={styles.right}>
+          <Pending />
           <Wallet />
       </div>
     </nav>

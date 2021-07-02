@@ -1,0 +1,29 @@
+.wallet {
+    display: flex;
+    /* border: 2px solid var(--primary-dim-color); */
+    /* border-radius: 15px; */
+    color: var(--primary-color);
+    margin-right: 10px;
+    font-size: 14px;
+}
+
+.address {
+    background-color: var(--primary-color);
+    color: var(--color-white);
+    padding: 8px 10px;
+    border-radius: 15px;
+    cursor: pointer;
+}
+
+.address:hover {
+    opacity: 0.7;
+}
+
+.balance {
+    background-color: var(--primary-dim-color);
+    color: var(--primary-color);
+    padding: 8px;
+    border-radius: 15px;
+    margin-right: -20px;
+    padding-right: 25px;
+}

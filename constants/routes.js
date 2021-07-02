@@ -5,14 +5,9 @@ export const ROUTES = [
         route: '/'
     },
     {
-        id: 'assets',
+        id: 'my-assets',
         title: 'My Assets',
-        route: '/assets'
-    },
-    {
-        id: 'pool',
-        title: 'Pool',
-        route: '/pool'
+        route: '/my-assets'
     },
     {
         id: 'buy',

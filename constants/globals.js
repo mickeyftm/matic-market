@@ -4,9 +4,12 @@ export const APP_DESCRIPTION = `${APP_NAME} is a permissionless decentralized ex
 export const APP_BRANDING = 'Made with ❤️ for YOU';
 
 /* temp items */
-export const tokens = {};
 export const POLYGON_CHAIN_ID = "0x89";
 export const POLYGON_TOKEN_ADDRESS = "0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee";
+export const POLYGON_TOKEN_OTHER_ADDRESS = "0x0000000000000000000000000000000000001010";
 
+export const FEE_CHARGING_ACCOUNT = "0x0aCac32476E2c7C54Cc33d03a26901B551984837";
 
+export const PER_TRANSECTION_FEE = 0.05;
 export const MAX_SLIPPAGE_VALUE = 50;
+export const MIN_MATIC_AMOUNT = 0.005;

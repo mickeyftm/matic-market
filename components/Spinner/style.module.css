@@ -25,6 +25,8 @@
   font-size: 10px;
   position: relative;
   text-indent: -9999em;
+  margin-top: 5px;
+  margin-bottom: 5px;
 
   --border: calc(var(--factor) * 1.1em);
 
