@@ -29,10 +29,8 @@ export async function haveMetaMask() {
 
 export async function getChainID() {
   try {
-    if (await isWalletLinked()) {
-      const chainId = await window.ethereum.request({ method: "eth_chainId" });
-      return chainId;
-    }
+    const chainId = await window.ethereum.request({ method: "eth_chainId" });
+    return chainId;
   } catch {}
   return null;
 }

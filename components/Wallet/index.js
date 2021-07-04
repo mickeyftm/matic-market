@@ -6,10 +6,9 @@ import {
   onWalletDisconnect,
   onWalletAccountsChanged,
   onWalletChainChanged,
-  getAllERC20Tokens,
   getRawBalance,
   switchToPolygonSafely,
-  getActiveAccountAddress,
+  getChainID,
 } from "@/utils/Accounts";
 import { useCallback, useEffect, useState } from "react";
 import { publish, subscribe } from "@/utils/EventBus";
@@ -101,6 +100,17 @@ export const Wallet = () => {
       showWalletConnectPopup
     );
 
+    (async () => {
+      const chainId = await getChainID();
+      if(chainId) {
+        const chainInfo = {
+          chainId: chainId,
+          isPolygonChain: chainId === POLYGON_CHAIN_ID,
+        };
+        setChain(chainInfo);
+      }
+    })()
+
     return () => {
       unsubscribe();
       unsubscribe2();
@@ -177,9 +187,11 @@ export const Wallet = () => {
           {`${walletBalance} ${DEFAULT_CURRENCY}`}
         </div>
       )}
-      <div className={styles.address} onClick={handleWalletClick}>
-        {wallet ? middleEllipsis(wallet, 16) : "Connect Wallet"}
-      </div>
+      {isValid && (
+        <div className={styles.address} onClick={handleWalletClick}>
+          {wallet ? middleEllipsis(wallet, 16) : "Connect Wallet"}
+        </div>
+      )}
     </div>
   );
 };
