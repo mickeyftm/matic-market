@@ -177,11 +177,9 @@ export const Wallet = () => {
           {`${walletBalance} ${DEFAULT_CURRENCY}`}
         </div>
       )}
-      {isValid && (
-        <div className={styles.address} onClick={handleWalletClick}>
-          {wallet ? middleEllipsis(wallet, 16) : "Connect Wallet"}
-        </div>
-      )}
+      <div className={styles.address} onClick={handleWalletClick}>
+        {wallet ? middleEllipsis(wallet, 16) : "Connect Wallet"}
+      </div>
     </div>
   );
 };
