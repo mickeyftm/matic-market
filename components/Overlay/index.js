@@ -3,9 +3,10 @@ import { subscribe } from '@/utils/EventBus';
 import { TOGGLE_OVERLAY_VISIBILITY } from '@/constants/events';
 import styles from './style.module.css';
 import { addClasses, noop } from '@/utils/Helpers';
-import { OVERLAY_TYPE_WITH_PENDING_LIST, OVERLAY_TYPE_WITH_TOKEN_LIST } from '@/constants/types';
-import { ListWithSearchAndSort } from '../ListWithSearchAndSort';
-import { PendingTransectionList } from '../PendingTransectionList';
+import { OVERLAY_TYPE_WITH_PENDING_LIST, OVERLAY_TYPE_WITH_POPUP, OVERLAY_TYPE_WITH_TOKEN_LIST } from '@/constants/types';
+import { ListWithSearchAndSort } from '@/components/ListWithSearchAndSort';
+import { PendingTransectionList } from '@/components/PendingTransectionList';
+import { Popup } from '@/components/Popup';
 
 const getOverlayComponent = (type) => {
     switch(type) {
@@ -14,6 +15,9 @@ const getOverlayComponent = (type) => {
         }
         case OVERLAY_TYPE_WITH_PENDING_LIST: {
             return PendingTransectionList
+        }
+        case OVERLAY_TYPE_WITH_POPUP: {
+            return Popup
         }
     }
     return noop;

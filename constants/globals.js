@@ -12,4 +12,10 @@ export const FEE_CHARGING_ACCOUNT = "0x0aCac32476E2c7C54Cc33d03a26901B551984837"
 
 export const PER_TRANSECTION_FEE = 0.05;
 export const MAX_SLIPPAGE_VALUE = 50;
-export const MIN_MATIC_AMOUNT = 0.005;
+export const MIN_MATIC_AMOUNT = 0.01;
+
+export const DEFAULT_CURRENCY = 'MATIC';
+
+export const EXPLORER_TRANSECTION_LINK = 'https://polygonscan.com/tx/';
+export const EXPLORER_ADDRESS_LINK = 'https://polygonscan.com/address/';
+export const EXPLORER_LINK = 'https://polygonscan.com/';

@@ -19,7 +19,6 @@ import {
   getAllERC20Tokens,
   getApprovalForToken,
   getTokenQuote,
-  requestWalletPermission,
   setTokenApproved,
   swapTokens,
   isWalletLinked as checkWalletLinked,
@@ -28,8 +27,9 @@ import {
 import { MAX_SLIPPAGE_VALUE, POLYGON_TOKEN_ADDRESS } from "@/constants/globals";
 import { publish, subscribe } from "@/utils/EventBus";
 import {
+  ADD_NOTIFICATION,
   ON_PENDING_TRANSECTION,
-  ON_TRANSECTION_COMPLETE,
+  TRIGGER_WALLET_CONNECT,
   WALLET_LINKED,
 } from "@/constants/events";
 import { Spinner } from "@/components/Spinner";
@@ -84,14 +84,14 @@ export default function Home() {
           _amount
         );
 
-        if(toTokenAmount) {
+        if (toTokenAmount) {
           const _toAmount = fromGwei(toTokenAmount, toToken.decimals);
           if (_toAmount !== toAmount) {
             setGasFee(estimatedGas);
             setToAmount(fromGwei(toTokenAmount, toToken.decimals));
           }
         } else {
-          setToAmount('');
+          setToAmount("");
           setError(true);
         }
       } else {
@@ -158,7 +158,7 @@ export default function Home() {
       setWalletLinked(!!_walet);
     })();
 
-    subscribe(WALLET_LINKED, (info) => {
+    const unsubscribe = subscribe(WALLET_LINKED, (info) => {
       if (info.linked) {
         resetUI();
         setWalletLinked(true);
@@ -167,6 +167,10 @@ export default function Home() {
       }
       setToApprove(null);
     });
+
+    return () => {
+      unsubscribe();
+    }
   }, []);
 
   const resetUI = () => {
@@ -212,8 +216,8 @@ export default function Home() {
       return "Connect Wallet";
     }
 
-    if(error) {
-      return 'Unable to proceed';
+    if (error) {
+      return "Unable to proceed";
     }
 
     if (toApprove && fromToken) {
@@ -240,7 +244,7 @@ export default function Home() {
       return false;
     }
 
-    if(error) {
+    if (error) {
       return false;
     }
 
@@ -280,11 +284,15 @@ export default function Home() {
     return false;
   };
 
+  const showTransectionSubmittedPopUp = () => {
+    // show on a popup that your transection is submitted. View on Polygon Scan. & a close button.
+  };
+
   const handleBtnClick = async () => {
     if (isLoading) return;
 
     if (!isWalletLinked) {
-      return requestWalletPermission();
+      publish(TRIGGER_WALLET_CONNECT);
     }
 
     if (toApprove) {
@@ -312,35 +320,32 @@ export default function Home() {
           _amount,
           slippagePercent
         );
-
-        if(transectionId) {
-          publish(ON_PENDING_TRANSECTION, {
+        
+        if (transectionId) {
+          const _fromAmountReadAble = fromGwei(_amount, fromToken.decimals, 8);
+          const _toAmountReadAble = fromGwei(_toAmount, toToken.decimals, 8);
+          const transectionData = {
             id: transectionId,
             fromToken: fromToken,
             toToken: toToken,
             fromAmount: _amount,
             toAmount: _toAmount,
             slippage: slippagePercent,
+            time: new Date().getTime(),
             address: await getActiveAccountAddress(),
-          });
-  
-          const status = await waitForTransection(transectionId);
-          
-          publish(ON_TRANSECTION_COMPLETE, {
-            id: transectionId,
-            status,
-          });
-          if (status.status) {
-            return resetUI();
-          } else {
-            console.log("Transection Failed");
-          }
+            text: `Swap ${_fromAmountReadAble} ${fromToken.symbol} for ${_toAmountReadAble} ${toToken.symbol}`,
+          };
+          publish(ON_PENDING_TRANSECTION, transectionData);
+          showTransectionSubmittedPopUp();
+          return resetUI();
         }
       } catch (e) {
         console.log(e);
+        publish(ADD_NOTIFICATION, {
+          text: 'Transection Cancelled',
+          status: false
+        });
       }
-
-      // handle transection failure here.
       setLoading(false);
       return;
     }
@@ -463,6 +468,10 @@ export default function Home() {
         >
           {isLoading ? <Spinner size={"MINI"} /> : getButtonText()}
         </button>
+
+        {/* <div className={homeStyles.notifications}>
+          <Notifications />
+        </div> */}
       </div>
     </div>
   );

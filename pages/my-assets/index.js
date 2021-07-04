@@ -5,9 +5,7 @@ import {
 } from "@/constants/globals";
 import { FETCH_TOKEN_LIST } from "@/constants/urls";
 import { getActiveAccountAddress, getAllERC20Tokens } from "@/utils/Accounts";
-import { fromGwei } from "@/utils/Helpers";
 import axios from "axios";
-import { useState } from "react";
 import styles from "./style.module.css";
 import { SetTitle } from "@/components/SetTitle";
 import SEO from "@/seo/assets";
@@ -64,7 +62,6 @@ export default function Assets() {
         queryPlaceholder="Search by name, symbol or paste address"
         fetchListMap={fetchListMap}
         className={styles.list}
-        allowExternalSearch={false}
       />
     </div>
   );

@@ -4,6 +4,9 @@ import styles from './style.module.css';
 export const Footer = () => {
   return(
 	  <footer className={styles.footer}>
+        <div className={styles.social}>
+            
+        </div>
         <a
           href="https://polygon.technology/"
           target="_blank"
@@ -20,6 +23,10 @@ export const Footer = () => {
             />
           </span>
         </a>
+
+        <div>
+          <span>Beta Version</span>
+        </div>
 	  </footer>
   );
 }

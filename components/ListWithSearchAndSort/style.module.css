@@ -94,7 +94,7 @@
     align-items: center;
 }
 
-.lssListItem > div > p {
+.lssListItem > div > div {
     display: flex;
     flex-direction: column;
     margin-left: 10px;
@@ -112,8 +112,17 @@
     color: #a5a5a5;
 }
 
-.lssHelpIcon:hover, .lssCloseIcon:hover {
+.lssHelpIcon:hover, .lssCloseIcon:hover, .lssListItemAddIcon:hover {
     opacity: 0.5;
     transition: opacity 0.3s ease;
     cursor: pointer;
+}
+
+.lssListItemTitle {
+    display: flex;
+    align-items: center;
+}
+
+.lssListItemAddIcon {
+    margin-left: 10px;
 }

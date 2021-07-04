@@ -1,0 +1,56 @@
+.notifications {
+    padding: 10px;
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+}
+
+.notification {
+    position: relative;
+    width: 100%;
+    padding: 15px;
+    margin: 10px;
+    display: flex;
+    border-radius: 10px;
+    min-height: 40px;
+    font-size: 14px;
+    color: var(--font-dim-color);
+    box-shadow: rgba(99, 99, 99, 0.2) 0px 2px 8px 0px;
+    animation: fadein 0.8s;
+    line-height: 1.3;
+}
+
+.content {
+    display: flex;
+    flex-direction: column;
+}
+
+.success > svg {
+    stroke: var(--color-green);
+}
+
+.failure > svg {
+    stroke: var(--color-red);
+}
+
+.status {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-right: 10px;
+}
+
+.notificationLink {
+    margin-top: 5px;
+    padding-top: 5px;
+    color: var(--primary-color);
+}
+
+@keyframes fadein {
+	from {
+		opacity:0;
+	}
+	to {
+		opacity:1;
+	}
+}

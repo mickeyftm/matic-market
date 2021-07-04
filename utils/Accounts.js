@@ -1,4 +1,9 @@
-import { POLYGON_CHAIN_ID, POLYGON_TOKEN_ADDRESS } from "@/constants/globals";
+import {
+  EXPLORER_LINK,
+  EXPLORER_TRANSECTION_LINK,
+  POLYGON_CHAIN_ID,
+  POLYGON_TOKEN_ADDRESS,
+} from "@/constants/globals";
 import {
   ADD_APPROVED_TOKEN,
   FETCH_APPROVAL_DATA,
@@ -12,8 +17,9 @@ import axios from "axios";
 import Moralis from "moralis";
 import debounce from "./debounce";
 import { publish } from "./EventBus";
-import { asyncDebounce, fromGwei } from "./Helpers";
+import { asyncDebounce, fromGwei, noop } from "./Helpers";
 import ERC20_ABI from "../public/files/erc20-abi.json";
+import { ON_WALLET_USER_ACTION } from "@/constants/events";
 
 export async function haveMetaMask() {
   const provider = window.ethereum;
@@ -60,7 +66,7 @@ export async function isWalletLinked() {
   return false;
 }
 
-export async function requestWalletPermission() {
+export async function requestWalletPermission( callback = noop ) {
   window.ethereum
     .request({
       method: "wallet_requestPermissions",
@@ -71,10 +77,14 @@ export async function requestWalletPermission() {
         (permission) => permission.parentCapability === "eth_accounts"
       );
       if (accountsPermission) {
+        callback();
+        publish(ON_WALLET_USER_ACTION, { isWalletLinked: true });
         console.log("eth_accounts permission successfully requested!");
       }
     })
     .catch((error) => {
+      callback();
+      publish(ON_WALLET_USER_ACTION, { isWalletLinked: false });
       if (error.code === 4001) {
         // EIP-1193 userRejectedRequest error
         console.log("Permissions needed to continue.");
@@ -112,9 +122,11 @@ export async function getERC20TokenDetails(address) {
         name: await contract.methods.name().call(),
         symbol: await contract.methods.symbol().call(),
         decimals: await contract.methods.decimals().call(),
-        balance: await contract.methods.balanceOf(await getActiveAccountAddress()).call(),
+        balance: await contract.methods
+          .balanceOf(await getActiveAccountAddress())
+          .call(),
         address: address,
-      }
+      };
       return tokenDetails;
     } catch (e) {}
   }
@@ -141,6 +153,31 @@ export const getRawBalance = async (decimals = 6) => {
     return fromGwei(balance, 18, decimals);
   } catch {}
   return null;
+};
+
+export const addERC20TokenToWallet = async (token) => {
+  try {
+    const wasAdded = await ethereum.request({
+      method: "wallet_watchAsset",
+      params: {
+        type: "ERC20",
+        options: {
+          address: token.address,
+          symbol: token.symbol,
+          decimals: token.decimals,
+          image: token.logoURI,
+        },
+      },
+    });
+
+    if (wasAdded) {
+      console.log("Thanks for your interest!");
+    } else {
+      console.log("Your loss!");
+    }
+  } catch (error) {
+    console.log(error);
+  }
 };
 
 export async function approveToken(tokenAddress) {
@@ -188,15 +225,10 @@ export async function swapTokens(
     slippage,
   });
 
+  console.log(data);
   if (data.success) {
-    //request gas fee
-    const estimatedGas = await window.ethereum.request({
-      method: "eth_estimateGas",
-      params: [paramsObj],
-    });
-
-    const _gas = Number(data.data.tx.gas).toString(16);
-    const _value = Number(data.data.tx.value).toString(16);
+    let _gas = "0x" + Number(data.data.tx.gas).toString(16);
+    let _value = "0x" + Number(data.data.tx.value).toString(16);
 
     const paramsObj = {
       ...data.data.tx,
@@ -206,7 +238,9 @@ export async function swapTokens(
 
     delete paramsObj.gasPrice;
 
-    //send transection to sign to approve
+    console.log(paramsObj);
+
+    // send transection to sign to approve
     const transection = await window.ethereum.request({
       method: "eth_sendTransaction",
       params: [paramsObj],
@@ -220,6 +254,10 @@ export async function logTransection(transection) {
     await axios.post(LOG_TRANSECTION, { transection });
   } catch {}
 }
+
+export const getExplorerTransectionLink = (transectionId) => {
+  return `${EXPLORER_TRANSECTION_LINK}${transectionId}`;
+};
 
 export async function waitForTransection(
   transectionId,
@@ -272,7 +310,7 @@ async function getTokenQuoteHelper(fromTokenAddress, toTokenAddress, amount) {
       toTokenAddress,
       amount,
     });
-    
+
     return {
       toTokenAmount: data.data.toTokenAmount,
       estimatedGas: data.data.estimatedGas,
@@ -290,4 +328,35 @@ export async function setTokenApproved(tokenAddress, transectionId) {
     walletAddress: await getActiveAccountAddress(),
     transectionId,
   });
+}
+
+export const switchToPolygonSafely = async () => {
+  try {
+    await ethereum.request({
+      method: 'wallet_switchEthereumChain',
+      params: [{ chainId: POLYGON_CHAIN_ID }],
+    });
+  } catch (switchError) {
+    // This error code indicates that the chain has not been added to MetaMask.
+    if (switchError.code === 4902) {
+      try {
+        await ethereum.request({
+          method: 'wallet_addEthereumChain',
+          params: [{
+            chainId: POLYGON_CHAIN_ID,
+            chainName: 'Polygon (Matic Mainnet)',
+            nativeCurrency: {
+              name: 'MATIC',
+              symbol: 'MATIC',
+              decimals: 18
+            },
+            rpcUrls: ['https://rpc-mainnet.maticvigil.com/'],
+            blockExplorerUrls: [EXPLORER_LINK]
+          }],
+        });
+      } catch (addError) {
+        // handle "add" error
+      }
+    }
+  }
 }

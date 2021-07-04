@@ -136,3 +136,12 @@
 .activeSlippage::placeholder {
   color: #a5a5a5;
 }
+
+.notifications {
+  position: absolute;
+  top: 70px;
+  right: 15px;
+  width: 20%;
+  height: 80%;
+  overflow-y: scroll;
+}

@@ -8,6 +8,8 @@
 
     --color-white: #fff;
     --color-black: #000;
+    --color-green: #229a22;
+    --color-red: #9a2222;
 
     --border-color: #dfdfdf;
 
@@ -16,7 +18,9 @@
     --light-font-color: #101010;
     --light-primary-color: #8247e5;
     --light-primary-dim-color: #eee7fa;
-
+    --light-primary-more-dim-color: #faf7ff;
+    --light-accent-color: #da7e22;
+    --light-accent-dim-color: #ffead5;
     /* Dark Theme TODO */
 
 }
@@ -26,6 +30,9 @@
     --font-color: var(--light-font-color);
     --primary-color: var(--light-primary-color);
     --primary-dim-color: var(--light-primary-dim-color);
+    --primary-more-dim-color: var(--light-primary-more-dim-color);
+    --accent-color: var(--light-accent-color);
+    --accent-dim-color: var(--light-accent-dim-color);
 }
 
 /* Keep it below light theme so that we can switch theme */

@@ -3,15 +3,16 @@
     height: var(--footer-height);
     border-top: 1px solid #eaeaea;
     display: flex;
-    justify-content: center;
+    justify-content: space-between;
     align-items: center;
+    padding-left: 10px;
+    padding-right: 10px;
 }
 
 .footer a {
     display: flex;
     justify-content: center;
     align-items: center;
-    flex-grow: 1;
 }
 
 .footerBrandingImage {

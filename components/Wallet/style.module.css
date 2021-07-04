@@ -1,5 +1,6 @@
 .wallet {
     display: flex;
+    align-items: center;
     /* border: 2px solid var(--primary-dim-color); */
     /* border-radius: 15px; */
     color: var(--primary-color);
@@ -26,4 +27,42 @@
     border-radius: 15px;
     margin-right: -20px;
     padding-right: 25px;
+}
+
+.popup {
+    padding: 20px 10px;
+    width: 100%;
+}
+
+.popupBtn {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    padding: 8px 10px;
+    border: 1px solid var(--primary-dim-color);
+    background-color: var(--primary-more-dim-color);
+    border-radius: 15px;
+    font-size: 16px;
+    color: var(--font-color);
+    cursor: pointer;
+}
+
+.chain {
+    padding: 5px 10px;
+    margin-right: 10px;
+    border-radius: 15px;
+    border: 1px solid var(--accent-color);
+    background-color: var(--accent-dim-color);
+    font-size: 16px;
+    color: var(--accent-color);
+    cursor: pointer;
+}
+
+.chain:hover {
+    opacity: 0.9;
+}
+
+.popupBtn:hover {
+    border: 1px solid var(--primary-color);
 }

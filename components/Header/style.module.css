@@ -20,7 +20,8 @@
 }
 
 .branding span {
-  font-family: baumans;
+  font-family: ubuntu-light;
+  /* font-family: baumans; */
   font-size: 20px;
   margin-right: 20px;
 }

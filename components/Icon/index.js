@@ -10,6 +10,7 @@ export const Icon = (props) => {
                 width : props.width || 20,
                 height: props.height || 20,
             }}
+            onClick={(e) => props.onClick && props.onClick(e)}
             className={addClasses([styles.icon, props.className])}
             dangerouslySetInnerHTML={{__html: icon }}
         />

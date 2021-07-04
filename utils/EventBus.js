@@ -12,16 +12,15 @@ export function subscribe(eventType, callback) {
 
   subscriptions[eventType][id] = callback;
 
-  return {
-    unsubscribe: () => {
-      delete subscriptions[eventType][id];
-      if (Object.keys(subscriptions[eventType]).length === 0)
-        delete subscriptions[eventType];
-    },
+  return () => {
+    delete subscriptions[eventType][id];
+    if (Object.keys(subscriptions[eventType]).length === 0)
+      delete subscriptions[eventType];
   };
 }
 
 export function publish(eventType, arg) {
+  console.log("EventBus::" + eventType);
   if (!subscriptions[eventType]) return;
 
   Object.keys(subscriptions[eventType]).forEach((key) =>

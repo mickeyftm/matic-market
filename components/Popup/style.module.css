@@ -1,0 +1,28 @@
+.popup {
+    display: flex;
+    flex-direction: column;
+    width: 30%;
+    border-radius: 15px;
+    background-color: var(--color-white);
+}
+
+.header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 16px;
+    padding: 15px;
+}
+
+.popupCloseIcon {
+    cursor: pointer;
+}
+
+.body {
+    padding: 10px;
+    padding-top: 15px;
+    padding-bottom: 15px;
+    background-color: var(--primary-more-dim-color);
+    border-bottom-left-radius: 15px;
+    border-bottom-right-radius: 15px;
+}

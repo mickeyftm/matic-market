@@ -1,5 +1,8 @@
 import { doesWalletTokenAddressPairExists, initDB } from '@/utils/db';
 
+/*
+    We will check whether the token is approved or not and stored in our db.
+*/
 export default async function handler(req, res) {
     if (req.method === 'POST') {
         await initDB();

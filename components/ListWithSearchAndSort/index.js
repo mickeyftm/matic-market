@@ -2,8 +2,9 @@ import { useEffect, useState, useCallback } from 'react';
 import Image from 'next/image';
 import styles from "./style.module.css";
 import { Spinner } from '@/components/Spinner';
+import { Icon } from '@/components/Icon';
 import { addClasses, fromGwei, noop } from '@/utils/Helpers';
-import { getERC20TokenDetails } from '@/utils/Accounts';
+import { addERC20TokenToWallet, getERC20TokenDetails } from '@/utils/Accounts';
 
 export const ListWithSearchAndSort = ({ allowExternalSearch = true, onItemSelected, title, className, headerName, headerValue, getValue = noop, queryPlaceholder, disableKeys = [], fetchListMap, closeOverlay }) => {
     const [query, setQuery] = useState("");
@@ -79,6 +80,12 @@ export const ListWithSearchAndSort = ({ allowExternalSearch = true, onItemSelect
         closeOverlay && closeOverlay();
     }
 
+    const addTokenToWallet = (event, token) => {
+        event.stopPropagation();
+        event.preventDefault();
+        addERC20TokenToWallet(token);
+    }
+
     return (
         <div className={addClasses([styles.lssContainer, className])}>
             <div className={styles.lssHeading}>
@@ -138,10 +145,19 @@ export const ListWithSearchAndSort = ({ allowExternalSearch = true, onItemSelect
                                         src={item.logoURI || '/images/help-circle.svg'}
                                         alt={item.name}
                                     />
-                                    <p>
-                                        <span>{item.symbol}</span>
+                                    <div>
+                                        <div className={styles.lssListItemTitle}>
+                                            <span>{item.symbol}</span>
+                                            <Icon
+                                                className={styles.lssListItemAddIcon}
+                                                name={'ADD'}
+                                                onClick={(e) => addTokenToWallet(e, item)}
+                                                width={15}
+                                                height={15}
+                                            />
+                                        </div>
                                         <span className={styles.lssListItemName}>{item.name}</span>
-                                    </p>
+                                    </div>
                                 </div>
                                 <span>{balance}</span>
                             </li>
