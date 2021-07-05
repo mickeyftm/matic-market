@@ -1,4 +1,9 @@
-import { DEFAULT_CURRENCY, POLYGON_CHAIN_ID } from "@/constants/globals";
+import {
+  DEFAULT_CURRENCY,
+  EXPLORER_ADDRESS_LINK,
+  EXPLORER_TRANSECTION_LINK,
+  POLYGON_CHAIN_ID,
+} from "@/constants/globals";
 import {
   isWalletLinked,
   requestWalletPermission,
@@ -9,6 +14,7 @@ import {
   getRawBalance,
   switchToPolygonSafely,
   getChainID,
+  getSeedForJazzi,
 } from "@/utils/Accounts";
 import { useCallback, useEffect, useState } from "react";
 import { publish, subscribe } from "@/utils/EventBus";
@@ -22,26 +28,20 @@ import {
   WALLET_DISCONNECTED,
   WALLET_LINKED,
 } from "@/constants/events";
-import { middleEllipsis } from "@/utils/Helpers";
+import { copyTextToClipboard, middleEllipsis } from "@/utils/Helpers";
 import styles from "./style.module.css";
 import { OVERLAY_TYPE_WITH_POPUP } from "@/constants/types";
 import Image from "next/image";
+import Jazzicon from "react-jazzicon";
+import { Icon } from "@/components/Icon";
+import { getTransections } from "@/utils/localStorage";
+import { PENDING_STATUS } from "@/constants/lables";
+import { Spinner } from "../Spinner";
 
 export const Wallet = () => {
   const [wallet, setWallet] = useState(false);
   const [chain, setChain] = useState(null);
   const [walletBalance, setWalletBalance] = useState(null);
-
-  const showWalletConnectPopup = useCallback(() => {
-    publish(TOGGLE_OVERLAY_VISIBILITY, {
-      isVisible: true,
-      type: OVERLAY_TYPE_WITH_POPUP,
-      props: {
-        title: "Connect to a wallet",
-        render: renderConnectToWalletPopUp,
-      },
-    });
-  }, []);
 
   useEffect(() => {
     onWalletConnect(async (info) => {
@@ -90,32 +90,54 @@ export const Wallet = () => {
       ({ isWalletLinked }) => {
         publish(ADD_NOTIFICATION, {
           status: isWalletLinked,
-          text: "Wallet linked " + (isWalletLinked ? "" : "Failed."),
+          text:
+            "Wallet linked " + (isWalletLinked ? "Successfully." : "Failed."),
         });
       }
     );
 
-    const unsubscribe2 = subscribe(
+    return () => {
+      unsubscribe();
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const showWalletConnectPopup = useCallback(() => {
+    publish(TOGGLE_OVERLAY_VISIBILITY, {
+      isVisible: true,
+      type: OVERLAY_TYPE_WITH_POPUP,
+      props: {
+        title: "Connect to a wallet",
+        render: renderConnectToWalletPopUp,
+      },
+    });
+  }, []);
+
+  useEffect(() => {
+    const unsubscribe = subscribe(
       TRIGGER_WALLET_CONNECT,
       showWalletConnectPopup
     );
 
     (async () => {
       const chainId = await getChainID();
-      if(chainId) {
+      if (chainId) {
         const chainInfo = {
           chainId: chainId,
           isPolygonChain: chainId === POLYGON_CHAIN_ID,
         };
         setChain(chainInfo);
       }
-    })()
 
-    return () => {
-      unsubscribe();
-      unsubscribe2();
-    };
-  }, []);
+      const _wallet = await isWalletLinked();
+      if (_wallet) {
+        setWallet(_wallet);
+        publish(WALLET_LINKED, { linked: !!_wallet });
+        getLatestBalance();
+      }
+    })();
+    return unsubscribe;
+  }, [showWalletConnectPopup]);
 
   const getLatestBalance = async () => {
     setWalletBalance(await getRawBalance());
@@ -151,9 +173,83 @@ export const Wallet = () => {
     );
   };
 
+  const renderAccountDetails = ({ closePopup }) => {
+    const transections = getTransections();
+
+    if (transections) {
+      transections.reverse();
+    }
+
+    const copyAddress = () => {
+      copyTextToClipboard(wallet);
+      publish(ADD_NOTIFICATION, {
+        status: true,
+        text: "Copied Address Successfully.",
+      });
+    };
+
+    return (
+      <div className={styles.addressDetails}>
+        <div className={styles.addressDetailsBody}>
+          <div className={styles.connectedWith}>
+            <h5>{"Connected with MetaMask"}</h5>
+            {/* <button>{'Change'}</button> */}
+          </div>
+
+          <div className={styles.addressData}>
+            <Jazzicon diameter={16} seed={getSeedForJazzi(wallet)} />
+            <span>{middleEllipsis(wallet, 24)}</span>
+          </div>
+
+          <div className={styles.addressDetailsActions}>
+            <button onClick={copyAddress}>
+              <Icon name={"COPY"} width={12} height={12} />
+              <span>{"Copy Address"}</span>
+            </button>
+
+            <a href={`${EXPLORER_ADDRESS_LINK}${wallet}`} target={"__blank"}>
+              <Icon name={"LINK"} width={12} height={12} />
+              <span>{"View on PolygonScan"}</span>
+            </a>
+          </div>
+        </div>
+        <ul className={styles.addressDetailsList}>
+          {transections
+            ? transections.map((txn) => {
+                return (
+                  <li key={txn.id}>
+                    <a
+                      href={`${EXPLORER_TRANSECTION_LINK}${txn.id}`}
+                      target={"__blank"}
+                    >
+                      {txn.text}
+                    </a>
+                    {txn.status === PENDING_STATUS && (
+                      <Spinner size={"MICRO"} />
+                    )}
+                  </li>
+                );
+              })
+            : "Your transactions will appear here."}
+        </ul>
+      </div>
+    );
+  };
+
+  const showWalletDetails = () => {
+    publish(TOGGLE_OVERLAY_VISIBILITY, {
+      isVisible: true,
+      type: OVERLAY_TYPE_WITH_POPUP,
+      props: {
+        title: "Account",
+        render: renderAccountDetails,
+      },
+    });
+  };
+
   const handleWalletClick = async () => {
     if (wallet) {
-      //show details on popup
+      showWalletDetails();
     } else {
       showWalletConnectPopup();
     }
@@ -189,7 +285,8 @@ export const Wallet = () => {
       )}
       {isValid && (
         <div className={styles.address} onClick={handleWalletClick}>
-          {wallet ? middleEllipsis(wallet, 16) : "Connect Wallet"}
+          <span>{wallet ? middleEllipsis(wallet, 16) : "Connect Wallet"}</span>
+          {wallet && <Jazzicon diameter={16} seed={getSeedForJazzi(wallet)} />}
         </div>
       )}
     </div>

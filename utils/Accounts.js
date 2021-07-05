@@ -129,6 +129,10 @@ export async function getERC20TokenDetails(address) {
   return null;
 }
 
+export const getSeedForJazzi = ( address ) => {
+  return parseInt(address.substring(2, 10), 16);
+}
+
 export async function getAllERC20Tokens(address) {
   try {
     initMoralis();

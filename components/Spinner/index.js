@@ -4,7 +4,9 @@ import { addClasses } from '@/utils/Helpers';
 export const Spinner = ({ size, className }) => {
     const classes = [ styles.loader, className ];
 
-    if( size === 'MINI') {
+    if( size === 'MICRO') {
+        classes.push( styles.loaderMicro );
+    } else if( size === 'MINI') {
         classes.push( styles.loaderMini );
     } else if( size === 'SMALL' ) {
         classes.push( styles.loaderSmall );

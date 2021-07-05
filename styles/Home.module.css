@@ -9,6 +9,7 @@
   height: var(--height);
   padding-left: 15px; 
   padding-right: 15px;
+  background-image: linear-gradient(-45deg, #fff 0%, #f7f2ff 100%);
 }
 
 .swapToken {
@@ -16,7 +17,7 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  width: 30%;
+  width: 420px;
 }
 
 .convertIcon:hover, .convertIcon:focus {

@@ -1,18 +1,25 @@
+import { APP_VERSION, REDDIT_HANDLE, TWITTER_HANDLE } from '@/constants/globals';
 import Image from 'next/image';
 import styles from './style.module.css';
+import { Icon } from '@/components/Icon';
 
 export const Footer = () => {
   return(
 	  <footer className={styles.footer}>
         <div className={styles.social}>
-            
+            <a href={TWITTER_HANDLE} target={'__blank'}>
+              <Icon name={'TWITTER'} />
+            </a>
+            <a href={REDDIT_HANDLE} target={'__blank'}>
+              <Icon name={'REDDIT'} />
+            </a>
         </div>
         <a
           href="https://polygon.technology/"
           target="_blank"
           rel="noopener noreferrer"
         >
-          Powered by{' '}
+          {'Powered by '}
           <span className={styles.logo}>
             <Image
               src="/images/polygon.svg"
@@ -24,8 +31,10 @@ export const Footer = () => {
           </span>
         </a>
 
-        <div>
-          <span>Beta Version</span>
+        <div className={styles.version}>
+          <span>
+            {`Beta Version  ${APP_VERSION}`}
+          </span>
         </div>
 	  </footer>
   );

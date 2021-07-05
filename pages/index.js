@@ -10,6 +10,7 @@ import {
   addClasses,
   compareBigAmounts,
   compareTokens,
+  debounce,
   fromGwei,
   getAmountInGwei,
 } from "@/utils/Helpers";
@@ -24,11 +25,12 @@ import {
   isWalletLinked as checkWalletLinked,
   waitForTransection,
 } from "@/utils/Accounts";
-import { MAX_SLIPPAGE_VALUE, POLYGON_TOKEN_ADDRESS } from "@/constants/globals";
+import { AUTO_PRICE_UPDATE_INTERVAL, MAX_SLIPPAGE_VALUE, POLYGON_TOKEN_ADDRESS } from "@/constants/globals";
 import { publish, subscribe } from "@/utils/EventBus";
 import {
   ADD_NOTIFICATION,
   ON_PENDING_TRANSECTION,
+  ON_QUOTE_PRICE_UPDATE,
   TRIGGER_WALLET_CONNECT,
   WALLET_LINKED,
 } from "@/constants/events";
@@ -49,7 +51,8 @@ export default function Home() {
   const [toApprove, setToApprove] = useState(null);
 
   const [error, setError] = useState(false);
-  const [isLoading, setLoading] = useState(true);
+  const [isLoading, setLoading] = useState(true);  
+  const [watchTokenPrice, setWatchTokenPrice] = useState(null);
 
   const fetchAllTokenBalances = async () => {
     const address = await getActiveAccountAddress();
@@ -75,6 +78,7 @@ export default function Home() {
   const getQuoteForTokenPair = useCallback(async () => {
     setLoading(true);
     setError(false);
+    console.log('Quoting');
     try {
       const _amount = getAmountInGwei(fromToken, fromAmount);
       if (Number(_amount) > 0) {
@@ -86,25 +90,37 @@ export default function Home() {
 
         if (toTokenAmount) {
           const _toAmount = fromGwei(toTokenAmount, toToken.decimals);
-          if (_toAmount !== toAmount) {
-            setGasFee(estimatedGas);
-            setToAmount(fromGwei(toTokenAmount, toToken.decimals));
-          }
+          setGasFee(estimatedGas);
+          setToAmount(_toAmount);
+          publish(ON_QUOTE_PRICE_UPDATE);
         } else {
           setToAmount("");
           setError(true);
         }
       } else {
-        if ("" !== toAmount) {
-          setToAmount("");
-        }
+        setToAmount("");
       }
     } catch (e) {
       console.log(e);
     }
     setLoading(false);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [fromToken, toToken, fromAmount]);
+  }, [fromToken, fromAmount, toToken]);
+
+  useEffect( () => {
+    const trackPrices = debounce( async () => {
+      await getQuoteForTokenPair();
+      publish(ADD_NOTIFICATION, {
+        status: 'warn',
+        text: 'Price Update Alert! Your quote prices are updated.'
+      })
+    }, AUTO_PRICE_UPDATE_INTERVAL)
+    
+    const unsubscribe = subscribe(ON_QUOTE_PRICE_UPDATE, () => {
+      trackPrices();
+    });
+
+    return unsubscribe;
+  }, [getQuoteForTokenPair])
 
   const checkApprovalBeforeConvert = useCallback(async () => {
     if (
@@ -133,17 +149,11 @@ export default function Home() {
   // quote prices on token change along with amount change
   useEffect(() => {
     (async () => {
-      setLoading(true);
       if (fromToken && toToken && fromAmount) {
         await getQuoteForTokenPair();
       }
-
-      if (!fromAmount && toAmount) {
-        setToAmount("");
-      }
-      setLoading(false);
     })();
-  }, [fromToken, toToken, fromAmount, toAmount, getQuoteForTokenPair]);
+  }, [fromToken, toToken, fromAmount, getQuoteForTokenPair]);
 
   // on every from-token change check for approvals
   useEffect(() => {

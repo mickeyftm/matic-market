@@ -7,6 +7,7 @@ import Image from "next/image";
 import { APP_NAME } from "@/constants/globals";
 import { Wallet } from '@/components/Wallet';
 import { Pending } from '@/components/Pending';
+import { Icon } from "../Icon";
 
 export const Header = () => {
   const route = useRouter();
@@ -16,17 +17,17 @@ export const Header = () => {
     <nav className={styles.navBar}>
       <div className={styles.left}>
         <Link href={"/"}>
-          <a>
+          <a className={styles.homeLink}>
             <div className={styles.branding}>
-              <Image
-                src="/images/logo.svg"
-                className={styles.footerBrandingImage}
-                alt="Logo"
-                height={60}
-                width={60}
-              />
-              <span>{APP_NAME}</span>
+              <div>
+                <Icon
+                  height={32}
+                  width={32}
+                  name={'LOGO'}
+                  />
+              </div>
             </div>
+            <span>{APP_NAME}</span>
           </a>
         </Link>
         <ul className={styles.navList}>

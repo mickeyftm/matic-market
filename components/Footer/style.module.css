@@ -19,3 +19,15 @@
     padding-left: 10px !important;
     padding-right: 10px !important;
 }
+
+.version {
+    font-size: 12px;
+}
+
+.social {
+    display: flex;
+}
+
+.social > a {
+    margin: 5px 10px;
+}

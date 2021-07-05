@@ -29,6 +29,10 @@
     stroke: var(--color-green);
 }
 
+.warn > svg {
+    stroke: var(--accent-color);
+}
+
 .failure > svg {
     stroke: var(--color-red);
 }
