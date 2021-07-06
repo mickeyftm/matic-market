@@ -21,8 +21,8 @@ export const Header = () => {
             <div className={styles.branding}>
               <div>
                 <Icon
-                  height={32}
-                  width={32}
+                  height={28}
+                  width={28}
                   name={'LOGO'}
                   />
               </div>

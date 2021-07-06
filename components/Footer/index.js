@@ -8,10 +8,10 @@ export const Footer = () => {
 	  <footer className={styles.footer}>
         <div className={styles.social}>
             <a href={TWITTER_HANDLE} target={'__blank'}>
-              <Icon name={'TWITTER'} />
+              <Icon width={22} height={22} name={'TWITTER'} />
             </a>
             <a href={REDDIT_HANDLE} target={'__blank'}>
-              <Icon name={'REDDIT'} />
+              <Icon width={22} height={22} name={'REDDIT'} />
             </a>
         </div>
         <a
