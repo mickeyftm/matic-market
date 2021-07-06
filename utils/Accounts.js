@@ -18,6 +18,8 @@ import { publish } from "./EventBus";
 import { asyncDebounce, fromGwei, noop } from "@/utils/Helpers";
 import ERC20_ABI from "../public/files/erc20-abi.json";
 import { ON_WALLET_USER_ACTION } from "@/constants/events";
+import { getFromStore } from "./Store";
+import { KEY_WALLET_ADDRESS } from "@/constants/types";
 
 export async function haveMetaMask() {
   const provider = window.ethereum;
@@ -146,9 +148,10 @@ export async function getAllERC20Tokens(address) {
 
 export const getRawBalance = async (decimals = 6) => {
   try {
+    const address = getFromStore(KEY_WALLET_ADDRESS) || await getActiveAccountAddress();
     const balance = await window.ethereum.request({
       method: "eth_getBalance",
-      params: [await getActiveAccountAddress(), "latest"],
+      params: [address, "latest"],
     });
     return fromGwei(balance, 18, decimals);
   } catch {}

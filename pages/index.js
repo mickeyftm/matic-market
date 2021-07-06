@@ -109,10 +109,13 @@ export default function Home() {
   useEffect( () => {
     const trackPrices = debounce( async () => {
       await getQuoteForTokenPair();
-      publish(ADD_NOTIFICATION, {
-        status: 'warn',
-        text: 'Price Update Alert! Your quote prices are updated.'
-      })
+      if(document && !document.hasFocus()) {
+        publish(ADD_NOTIFICATION, {
+          status: 'warn',
+          onlyOnce: true,
+          text: 'Price Update Alert! Your quote prices are updated.'
+        });
+      }
     }, AUTO_PRICE_UPDATE_INTERVAL)
     
     const unsubscribe = subscribe(ON_QUOTE_PRICE_UPDATE, () => {

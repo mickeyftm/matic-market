@@ -11,13 +11,25 @@ export const Notifications = () => {
   const [userFocused, setUserFocused] = useState(true);
 
   const addNotification = useCallback((noti) => {
-    console.log('ADD', notificationList);
     const _notis = [...notificationList];
-    _notis.push({
-      id: getUniqueId(),
-      ...noti
-    });
-    setNotificationList(_notis);
+    let shouldAdd = true;
+    
+    if(noti.onlyOnce) {
+      _notis.forEach( notification => {
+        if(notification.text === noti.text && notification.status === noti.status) {
+          shouldAdd = false;
+          return false;
+        }
+      });
+    }
+
+    if(shouldAdd) {
+      _notis.push({
+        id: getUniqueId(),
+        ...noti
+      });
+      setNotificationList(_notis);
+    }
   }, [notificationList]);
 
   const removeTopNotification = useCallback(() => {

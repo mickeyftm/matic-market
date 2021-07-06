@@ -16,9 +16,12 @@ export const getData = ( key ) => {
     return  null;
 }
 
-export const getTransections = () => {
-    const transections = getData(TRANSECTIONS);
-    return transections || [];
+export const getTransections = ( address ) => {
+    const transections = getData(TRANSECTIONS) || [];
+    if(address) {
+        return transections.filter( txn => txn.address === address );
+    }
+    return transections;
 }
 
 export const insertTransection = (transection) => {

@@ -3,6 +3,7 @@ const {MongoClient} = require('mongodb');
 export const Collections = {
     COLLECTION_APPROVALS: 'approvals',
     COLLECTION_LOGS: 'logs',
+	COLLECTION_HELPS: 'helps'
 };
 
 /**** DO NOT EXPORT ****/
@@ -37,6 +38,12 @@ export const doesWalletTokenAddressPairExists = async (walletAddress, tokenAddre
 	return !!items;
 }
 
+export const getHelpTopics = async () => {
+	const collection = _DB_INSTANCE_.collection(Collections.COLLECTION_HELPS);
+	const items = await collection.find({}).limit(10).toArray();
+	console.log( items );
+	return items;
+}
 
 export const addWalletTokenAddressPair = async (walletAddress, tokenAddress, transectionId) => {
 	const collection = _DB_INSTANCE_.collection(Collections.COLLECTION_APPROVALS);

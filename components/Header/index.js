@@ -21,10 +21,12 @@ export const Header = () => {
             <div className={styles.branding}>
               <div>
                 <Icon
-                  height={28}
-                  width={28}
+                  className={styles.logo}
+                  height={40}
+                  width={40}
                   name={'LOGO'}
                   />
+                  <div />
               </div>
             </div>
             <span>{APP_NAME}</span>

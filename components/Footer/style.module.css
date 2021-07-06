@@ -27,8 +27,14 @@
 
 .social {
     display: flex;
+
 }
 
 .social > a {
     margin: 5px 10px;
+    opacity: 0.9;
+}
+
+.social > a:hover {
+    opacity: 0.5;
 }

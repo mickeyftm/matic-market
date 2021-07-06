@@ -7,10 +7,6 @@ import {
 import {
   isWalletLinked,
   requestWalletPermission,
-  onWalletConnect,
-  onWalletDisconnect,
-  onWalletAccountsChanged,
-  onWalletChainChanged,
   getRawBalance,
   switchToPolygonSafely,
   getChainID,
@@ -21,85 +17,67 @@ import { publish, subscribe } from "@/utils/EventBus";
 import {
   ADD_NOTIFICATION,
   ON_TRANSECTION_COMPLETE,
+  ON_WALLET_ACCOUNTS_CHANGED,
+  ON_WALLET_CHAIN_CHANGED,
+  ON_WALLET_CONNECT,
   ON_WALLET_USER_ACTION,
   TOGGLE_OVERLAY_VISIBILITY,
   TRIGGER_WALLET_CONNECT,
-  WALLET_CONNECTED,
-  WALLET_DISCONNECTED,
   WALLET_LINKED,
 } from "@/constants/events";
 import { copyTextToClipboard, middleEllipsis } from "@/utils/Helpers";
 import styles from "./style.module.css";
-import { OVERLAY_TYPE_WITH_POPUP } from "@/constants/types";
+import { KEY_CHAIN_DETAILS, KEY_WALLET_ADDRESS, KEY_WALLET_RAW_BALANCE, OVERLAY_TYPE_WITH_POPUP, WALLET_ADDRESS } from "@/constants/types";
 import Image from "next/image";
 import Jazzicon from "react-jazzicon";
 import { Icon } from "@/components/Icon";
 import { getTransections } from "@/utils/localStorage";
 import { PENDING_STATUS } from "@/constants/lables";
 import { Spinner } from "../Spinner";
+import notiStyles from '@/components/Notifications/style.module.css';
+import { getFromStore } from "@/utils/Store";
 
 export const Wallet = () => {
-  const [wallet, setWallet] = useState(false);
-  const [chain, setChain] = useState(null);
-  const [walletBalance, setWalletBalance] = useState(null);
+  const walletAddress = getFromStore(KEY_WALLET_ADDRESS);
+  const chainDetails = getFromStore(KEY_CHAIN_DETAILS);
+  const rawBalance = getFromStore(KEY_WALLET_RAW_BALANCE);
 
-  useEffect(() => {
-    onWalletConnect(async (info) => {
-      const chainInfo = {
-        chainId: info.chainId,
-        isPolygonChain: info.chainId === POLYGON_CHAIN_ID,
-      };
-      setChain(chainInfo);
-      publish(WALLET_CONNECTED, chainInfo);
+  const [wallet, setWallet] = useState(walletAddress);
+  const [chain, setChain] = useState(chainDetails);
+  const [walletBalance, setWalletBalance] = useState(rawBalance);
 
-      const _walet = await isWalletLinked();
-      setWallet(_walet);
-      publish(WALLET_LINKED, { linked: !!_walet });
-      console.log("onWalletConnect", info, wallet, _walet);
+  useEffect( () => {
+    const unsubscribeOnConnect = subscribe(ON_WALLET_CONNECT, (data) => {
+      setWallet(data.address);
+      setWalletBalance(data.balance);
+      setChain(data);
     });
 
-    onWalletDisconnect((error) => {
-      publish(WALLET_DISCONNECTED);
-      publish(WALLET_LINKED, { linked: false });
-      console.log("onWalletDisconnect", error);
+    const unsubscribeOnAccChanged = subscribe(ON_WALLET_ACCOUNTS_CHANGED, (data) => {
+      setWallet(data.address);
+      setWalletBalance(data.balance);
     });
 
-    onWalletAccountsChanged((accounts) => {
-      if (accounts.length > 0) {
-        setWallet(accounts[0]);
-        publish(WALLET_LINKED, { linked: true });
-      } else {
-        publish(WALLET_LINKED, { linked: false });
-        setWallet(false);
-      }
-      console.log("onWalletAccountsChanged", accounts);
+    const unsubscribeOnChainChanged = subscribe(ON_WALLET_CHAIN_CHANGED, (data) => {
+      setChain(data);
     });
 
-    onWalletChainChanged(async (chainId) => {
-      const chainInfo = {
-        chainId,
-        isPolygonChain: chainId === POLYGON_CHAIN_ID,
-      };
-      setChain(chainInfo);
-      getLatestBalance();
-      console.log("onWalletChainChanged", chainId);
-    });
-
-    const unsubscribe = subscribe(
+    const unsubscribeUserAction = subscribe(
       ON_WALLET_USER_ACTION,
       ({ isWalletLinked }) => {
         publish(ADD_NOTIFICATION, {
           status: isWalletLinked,
-          text:
-            "Wallet linked " + (isWalletLinked ? "Successfully." : "Failed."),
+          text: "Wallet linked " + (isWalletLinked ? "Successfully." : "Failed."),
         });
       }
     );
 
     return () => {
-      unsubscribe();
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+      unsubscribeOnConnect();
+      unsubscribeOnAccChanged();
+      unsubscribeOnChainChanged();
+      unsubscribeUserAction();
+    }
   }, []);
 
   const showWalletConnectPopup = useCallback(() => {
@@ -174,7 +152,7 @@ export const Wallet = () => {
   };
 
   const renderAccountDetails = ({ closePopup }) => {
-    const transections = getTransections();
+    const transections = getTransections( getFromStore(KEY_WALLET_ADDRESS) );
 
     if (transections) {
       transections.reverse();
@@ -184,6 +162,7 @@ export const Wallet = () => {
       copyTextToClipboard(wallet);
       publish(ADD_NOTIFICATION, {
         status: true,
+        onlyOnce: true,
         text: "Copied Address Successfully.",
       });
     };
@@ -214,7 +193,7 @@ export const Wallet = () => {
           </div>
         </div>
         <ul className={styles.addressDetailsList}>
-          {transections
+          {transections && transections.length > 0
             ? transections.map((txn) => {
                 return (
                   <li key={txn.id}>
@@ -226,6 +205,14 @@ export const Wallet = () => {
                     </a>
                     {txn.status === PENDING_STATUS && (
                       <Spinner size={"MICRO"} />
+                    )}
+
+                    {txn.status === true && (
+                      <Icon className={notiStyles.success} width={16} height={16} name={'CHECK'} />
+                    )}
+
+                    {txn.status === false && (
+                      <Icon className={notiStyles.failure} width={16} height={16} name={'ALERT'} />
                     )}
                   </li>
                 );
