@@ -1,3 +1,4 @@
+import styles from './style.module.css';
 export default function Help() {
     return (
         <div className={styles.help}>
