@@ -22,8 +22,8 @@ export const Header = () => {
               <div>
                 <Icon
                   className={styles.logo}
-                  height={40}
-                  width={40}
+                  height={36}
+                  width={36}
                   name={'LOGO'}
                   />
                   <div />

@@ -2,14 +2,11 @@ import {
   DEFAULT_CURRENCY,
   EXPLORER_ADDRESS_LINK,
   EXPLORER_TRANSECTION_LINK,
-  POLYGON_CHAIN_ID,
 } from "@/constants/globals";
 import {
-  isWalletLinked,
   requestWalletPermission,
   getRawBalance,
   switchToPolygonSafely,
-  getChainID,
   getSeedForJazzi,
 } from "@/utils/Accounts";
 import { useCallback, useEffect, useState } from "react";
@@ -23,18 +20,24 @@ import {
   ON_WALLET_USER_ACTION,
   TOGGLE_OVERLAY_VISIBILITY,
   TRIGGER_WALLET_CONNECT,
-  WALLET_LINKED,
 } from "@/constants/events";
 import { copyTextToClipboard, middleEllipsis } from "@/utils/Helpers";
 import styles from "./style.module.css";
-import { KEY_CHAIN_DETAILS, KEY_WALLET_ADDRESS, KEY_WALLET_RAW_BALANCE, OVERLAY_TYPE_WITH_POPUP, WALLET_ADDRESS } from "@/constants/types";
+import {
+  KEY_CHAIN_DETAILS,
+  KEY_IS_WINDOW_FOCUSED,
+  KEY_WALLET_ADDRESS,
+  KEY_WALLET_RAW_BALANCE,
+  OVERLAY_TYPE_WITH_POPUP,
+  WALLET_ADDRESS,
+} from "@/constants/types";
 import Image from "next/image";
 import Jazzicon from "react-jazzicon";
 import { Icon } from "@/components/Icon";
 import { getTransections } from "@/utils/localStorage";
 import { PENDING_STATUS } from "@/constants/lables";
 import { Spinner } from "../Spinner";
-import notiStyles from '@/components/Notifications/style.module.css';
+import notiStyles from "@/components/Notifications/style.module.css";
 import { getFromStore } from "@/utils/Store";
 
 export const Wallet = () => {
@@ -46,38 +49,60 @@ export const Wallet = () => {
   const [chain, setChain] = useState(chainDetails);
   const [walletBalance, setWalletBalance] = useState(rawBalance);
 
-  useEffect( () => {
+  useEffect(() => {
     const unsubscribeOnConnect = subscribe(ON_WALLET_CONNECT, (data) => {
       setWallet(data.address);
       setWalletBalance(data.balance);
       setChain(data);
+      if (data.address) {
+        getLatestBalance();
+      }
     });
 
-    const unsubscribeOnAccChanged = subscribe(ON_WALLET_ACCOUNTS_CHANGED, (data) => {
-      setWallet(data.address);
-      setWalletBalance(data.balance);
-    });
+    const unsubscribeOnAccChanged = subscribe(
+      ON_WALLET_ACCOUNTS_CHANGED,
+      (data) => {
+        setWallet(data.address);
+        setWalletBalance(data.balance);
+        if (data.address) {
+          getLatestBalance();
+        }
+      }
+    );
 
-    const unsubscribeOnChainChanged = subscribe(ON_WALLET_CHAIN_CHANGED, (data) => {
-      setChain(data);
-    });
+    const unsubscribeOnChainChanged = subscribe(
+      ON_WALLET_CHAIN_CHANGED,
+      (data) => {
+        setChain(data);
+        getLatestBalance();
+      }
+    );
 
     const unsubscribeUserAction = subscribe(
       ON_WALLET_USER_ACTION,
       ({ isWalletLinked }) => {
         publish(ADD_NOTIFICATION, {
           status: isWalletLinked,
-          text: "Wallet linked " + (isWalletLinked ? "Successfully." : "Failed."),
+          text:
+            "Wallet linked " + (isWalletLinked ? "Successfully." : "Failed."),
         });
       }
     );
 
+    const interval = setInterval( () => {
+      const isUserFocused = getFromStore(KEY_IS_WINDOW_FOCUSED);
+      if( isUserFocused ) {
+        getLatestBalance();
+      }
+    }, 5000);
+
     return () => {
+      clearInterval(interval);
       unsubscribeOnConnect();
       unsubscribeOnAccChanged();
       unsubscribeOnChainChanged();
       unsubscribeUserAction();
-    }
+    };
   }, []);
 
   const showWalletConnectPopup = useCallback(() => {
@@ -96,24 +121,6 @@ export const Wallet = () => {
       TRIGGER_WALLET_CONNECT,
       showWalletConnectPopup
     );
-
-    (async () => {
-      const chainId = await getChainID();
-      if (chainId) {
-        const chainInfo = {
-          chainId: chainId,
-          isPolygonChain: chainId === POLYGON_CHAIN_ID,
-        };
-        setChain(chainInfo);
-      }
-
-      const _wallet = await isWalletLinked();
-      if (_wallet) {
-        setWallet(_wallet);
-        publish(WALLET_LINKED, { linked: !!_wallet });
-        getLatestBalance();
-      }
-    })();
     return unsubscribe;
   }, [showWalletConnectPopup]);
 
@@ -152,7 +159,7 @@ export const Wallet = () => {
   };
 
   const renderAccountDetails = ({ closePopup }) => {
-    const transections = getTransections( getFromStore(KEY_WALLET_ADDRESS) );
+    const transections = getTransections(getFromStore(KEY_WALLET_ADDRESS));
 
     if (transections) {
       transections.reverse();
@@ -186,7 +193,11 @@ export const Wallet = () => {
               <span>{"Copy Address"}</span>
             </button>
 
-            <a href={`${EXPLORER_ADDRESS_LINK}${wallet}`} target={"__blank"}>
+            <a
+              href={`${EXPLORER_ADDRESS_LINK}${wallet}`}
+              target={"_blank"}
+              rel="noreferrer"
+            >
               <Icon name={"LINK"} width={12} height={12} />
               <span>{"View on PolygonScan"}</span>
             </a>
@@ -199,7 +210,8 @@ export const Wallet = () => {
                   <li key={txn.id}>
                     <a
                       href={`${EXPLORER_TRANSECTION_LINK}${txn.id}`}
-                      target={"__blank"}
+                      target={"_blank"}
+                      rel="noreferrer"
                     >
                       {txn.text}
                     </a>
@@ -208,11 +220,21 @@ export const Wallet = () => {
                     )}
 
                     {txn.status === true && (
-                      <Icon className={notiStyles.success} width={16} height={16} name={'CHECK'} />
+                      <Icon
+                        className={notiStyles.success}
+                        width={16}
+                        height={16}
+                        name={"CHECK"}
+                      />
                     )}
 
                     {txn.status === false && (
-                      <Icon className={notiStyles.failure} width={16} height={16} name={'ALERT'} />
+                      <Icon
+                        className={notiStyles.failure}
+                        width={16}
+                        height={16}
+                        name={"ALERT"}
+                      />
                     )}
                   </li>
                 );

@@ -7,10 +7,10 @@ export const Footer = () => {
   return(
 	  <footer className={styles.footer}>
         <div className={styles.social}>
-            <a href={TWITTER_HANDLE} target={'__blank'}>
+            <a href={TWITTER_HANDLE} target={'_blank'} rel="noreferrer">
               <Icon width={22} height={22} name={'TWITTER'} />
             </a>
-            <a href={REDDIT_HANDLE} target={'__blank'}>
+            <a href={REDDIT_HANDLE} target={'_blank'} rel="noreferrer">
               <Icon width={22} height={22} name={'REDDIT'} />
             </a>
         </div>

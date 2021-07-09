@@ -3,20 +3,30 @@ import Image from 'next/image';
 import styles from "./style.module.css";
 import { Spinner } from '@/components/Spinner';
 import { Icon } from '@/components/Icon';
-import { addClasses, fromGwei, noop } from '@/utils/Helpers';
-import { addERC20TokenToWallet, getERC20TokenDetails } from '@/utils/Accounts';
+import { addClasses, noop } from '@/utils/Helpers';
+import { fromGwei } from '@/utils/calc';
+import { addERC20TokenToWallet } from '@/utils/Accounts';
+import { subscribe } from '@/utils/EventBus';
 
-export const ListWithSearchAndSort = ({ allowExternalSearch = true, onItemSelected, title, className, headerName, headerValue, getValue = noop, queryPlaceholder, disableKeys = [], fetchListMap, closeOverlay }) => {
+export const ListWithSearchAndSort = ({ allowExternalSearch, getListMap, onExternalSearch, subscribeEvent, onItemSelected, title, className, headerName, headerValue, getValue = noop, queryPlaceholder, disableKeys = [], fetchListMap, closeOverlay }) => {
     const [query, setQuery] = useState("");
     const [isLoading, setLoading] = useState(false);
     const [listItems, setListItems] = useState([]);
-    const [listMap, setListMap] = useState({});
+    const [eventCount, setEventCount] = useState(0);
+
+    useEffect( () => {
+        if(subscribeEvent) {
+            const unsubscribe = subscribe(subscribeEvent, () => {
+                setEventCount(eventCount + 1);
+            });
+            return unsubscribe;
+        }
+    }, [eventCount, subscribeEvent]);
 
     useEffect( () => {
         (async () => {
             setLoading(true);
             const _listMap = await fetchListMap();
-            setListMap(_listMap);
             setLoading(false);
             onQueryChange(null, _listMap);
         })()
@@ -30,7 +40,9 @@ export const ListWithSearchAndSort = ({ allowExternalSearch = true, onItemSelect
     }, [getValue]);
 
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    const onQueryChange = async (event, listMapVal = listMap) => {
+    const onQueryChange = async (event, listMapVal = getListMap() ) => {
+        console.log(listMapVal);
+        
         const _query = event ? event.target.value : '';
         
         if(_query && _query === query) return;
@@ -54,17 +66,7 @@ export const ListWithSearchAndSort = ({ allowExternalSearch = true, onItemSelect
 
         if(allowExternalSearch && _filteredItems.length === 0 ){
             setLoading(true);
-            const _address = lowerCaseQuery;
-            const details = await getERC20TokenDetails(_address);
-            if(details) {
-                setListItems([_address]);
-                setListMap({
-                    ...listMap,
-                    [_address]: details
-                });
-            } else {
-                setListItems([]);
-            }
+            onExternalSearch && await onExternalSearch(lowerCaseQuery, setListItems);
         } else {
             sortBasedOnValue(_filteredItems, listMapVal);
         }
@@ -133,7 +135,8 @@ export const ListWithSearchAndSort = ({ allowExternalSearch = true, onItemSelect
                     isLoading ? <Spinner className={styles.spinner} size={'MEDIUM'} />
                     : listItems.map( _item => {
                         const isDisabled = disableKeys.includes(_item);
-                        const item = listMap[_item];
+                        const _listMap = getListMap();
+                        const item = _listMap[_item];
                         const balance = item.balance ? fromGwei(item.balance, item.decimals) : getValue ? getValue(item) : '0';
                         return(
                             <li className={addClasses([styles.lssListItem, isDisabled && styles.lssListItemDisabled])} key={item.address} onClick={() => onItemClick(item)}>

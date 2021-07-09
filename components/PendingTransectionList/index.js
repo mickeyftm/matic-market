@@ -1,6 +1,5 @@
 import styles from "./style.module.css";
 import Image from "next/image";
-import { fromGwei } from "@/utils/Helpers";
 import { getExplorerTransectionLink } from "@/utils/Accounts";
 
 export const PendingTransectionList = ({ transections, closeOverlay }) => {
@@ -37,7 +36,7 @@ export const PendingTransectionList = ({ transections, closeOverlay }) => {
         {transections.map((tx) => {
           return (
             <li key={tx.id} className={styles.ptListItem}>
-              <a href={getExplorerTransectionLink(tx.id)} target="__blank">
+              <a href={getExplorerTransectionLink(tx.id)} target="_blank" rel="noreferrer">
                 <span>{tx.text}</span>
               </a>
             </li>

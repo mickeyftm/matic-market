@@ -1,8 +1,8 @@
-import { BigNumber } from "bignumber.js";
 /*
     Take an array of classes / strings
     @return space seperated strings
 */
+
 export const addClasses = (classes) => {
   let classString = "";
   classes.forEach((item) => {
@@ -57,50 +57,9 @@ export function toFixed(x) {
   return x;
 }
 
-export const isBigAmountNonZero = (amount) => {
-  const _amount = new BigNumber(amount);
-  return _amount.isGreaterThan(0);
-};
-
-export const compareBigAmounts = (amount1, amount2) => {
-  const _amount1 = new BigNumber(amount1);
-  const _amount2 = new BigNumber(amount2);
-
-  if (_amount1.isEqualTo(_amount2)) {
-    return "e";
-  }
-
-  if (_amount1.isGreaterThan(_amount2)) {
-    return "g";
-  }
-
-  if (_amount1.isLessThan(_amount2)) {
-    return "l";
-  }
-};
-
-export const isNegative = (num) => {
-  const _num = new BigNumber(num);
-  return _num.isNegative();
-};
-
-export const fromGwei = (
-  balance,
-  decimals,
-  decimalPlaces = 8,
-  substractAmount = 0
-) => {
-  let _balance = new BigNumber(balance);
-  const _decimals = new BigNumber(`1e+${decimals}`);
-  _balance = _balance.dividedBy(_decimals);
-  if (substractAmount) {
-    _balance = _balance.minus(new BigNumber(substractAmount));
-  }
-  if (decimalPlaces) {
-    return _balance.toFixed(decimalPlaces).toString();
-  }
-  return _balance.toFixed().toString();
-};
+export function isValidContractAddress(address) {
+  return address && address.includes("0x") && address.length === 42;
+}
 
 export const asyncDebounce = (fn, time = 300) => {
   let timer, lastPromise;
@@ -121,19 +80,14 @@ export const asyncDebounce = (fn, time = 300) => {
   };
 };
 
-export const getUniqueId = ( length = 8 ) => {
-  var POSSIBLES = 'qwertyuiopasdfghjklzxcvbnmQAZWSXEDCRFVTGBYHNUJMIKOLP1234567890_$^@';
-  var str = '';
-  for(let i=0; i<length; i++){
-    str += POSSIBLES[ Math.floor( Math.random() * POSSIBLES.length ) ];
+export const getUniqueId = (length = 8) => {
+  var POSSIBLES =
+    "qwertyuiopasdfghjklzxcvbnmQAZWSXEDCRFVTGBYHNUJMIKOLP1234567890_$^@";
+  var str = "";
+  for (let i = 0; i < length; i++) {
+    str += POSSIBLES[Math.floor(Math.random() * POSSIBLES.length)];
   }
   return str;
-}
-
-export const getAmountInGwei = (token, amount) => {
-  let _amount = new BigNumber(amount);
-  let _decimals = new BigNumber(`1e+${token.decimals}`);
-  return _amount.multipliedBy(_decimals).toFixed();
 };
 
 export const compareTokens = (token1, token2) => {
@@ -172,11 +126,11 @@ export const debounce = (fn, time = 500) => {
   let timer;
   return (...args) => {
     clearTimeout(timer);
-    timer = setTimeout( () => {
+    timer = setTimeout(() => {
       fn.apply({}, args);
     }, time);
-  }
-}
+  };
+};
 
 export function copyTextToClipboard(text) {
   if (!navigator.clipboard) {
@@ -185,7 +139,7 @@ export function copyTextToClipboard(text) {
   }
   navigator.clipboard.writeText(text).then(
     function () {
-    //   console.log("Async: Copying to clipboard was successful!");
+      //   console.log("Async: Copying to clipboard was successful!");
     },
     function (err) {
       console.error("Async: Could not copy text: ", err);

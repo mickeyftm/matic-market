@@ -57,7 +57,7 @@ export const Notifications = () => {
   }, [addNotification]);
 
   useEffect(() => {
-    if (userFocused) {
+    if(userFocused) {
       setTimeout(() => {
         removeTopNotification();
       }, NOTIFICATION_STAND_BY_TIME);
@@ -107,12 +107,12 @@ export const Notifications = () => {
               {getNotificationIcon(noti.status)}
             </div>
             <div className={styles.content}>
-              {`${noti.status === false ? "Failed!" : ""}${
+              {`${noti.status === false ? "Failed! " : ""}${
                 noti.text
               }`}
               {noti.link && (
                 <span className={styles.notificationLink}>
-                  <a href={noti.link} target={"__blank"}>
+                  <a href={noti.link} target={"_blank"} rel="noreferrer">
                     {noti.linkText}{" "}
                   </a>
                 </span>

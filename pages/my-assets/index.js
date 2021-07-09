@@ -3,30 +3,23 @@ import {
   POLYGON_TOKEN_ADDRESS,
   POLYGON_TOKEN_OTHER_ADDRESS,
 } from "@/constants/globals";
-import { FETCH_TOKEN_LIST } from "@/constants/urls";
-import { getActiveAccountAddress, getAllERC20Tokens } from "@/utils/Accounts";
-import axios from "axios";
+import { getActiveAccountAddress, getAllTokenList } from "@/utils/Accounts";
 import styles from "./style.module.css";
 import { SetTitle } from "@/components/SetTitle";
 import SEO from "@/seo/assets";
+import { getFromStore } from "@/utils/Store";
+import { KEY_ALL_TOKEN_LIST, KEY_WALLET_ADDRESS } from "@/constants/types";
+import { useState } from "react";
 
 export default function Assets() {
-  const getTokenList = async () => {
-    try {
-      const { data: response } = await axios.get(FETCH_TOKEN_LIST);
-      if (response.success) {
-        return response.data.tokens;
-      }
-    } catch (e) {
-      console.log(e);
-    }
-    return {};
-  };
-
+  const [balances, setBalances] = useState({});
   const fetchAllTokenBalances = async (tokenListMap) => {
-    const address = await getActiveAccountAddress();
-    if (address) {
-      const allTokens = await getAllERC20Tokens(address);
+    const walletAddress =
+      getFromStore(KEY_WALLET_ADDRESS) || (await getActiveAccountAddress());
+    if (walletAddress) {
+
+      const Moralis = await import('@/utils/Moralis');
+      const allTokens = await Moralis.getAllERC20Tokens(walletAddress);
       const _balances = {};
 
       allTokens.forEach((token) => {
@@ -41,15 +34,26 @@ export default function Assets() {
           };
         }
       });
+
+      setBalances(_balances);
       return _balances;
     }
     return {};
+  };
+
+  const getTokenList = async () => {
+    return getFromStore(KEY_ALL_TOKEN_LIST) || (await getAllTokenList());
   };
 
   const fetchListMap = async () => {
     const tokenListMap = await getTokenList();
     const _balances = await fetchAllTokenBalances(tokenListMap);
     return _balances;
+  };
+
+  const getCachedTokenList = () => {
+    if (balances) return balances;
+    return {};
   };
 
   return (
@@ -62,6 +66,8 @@ export default function Assets() {
         queryPlaceholder="Search by name, symbol or paste address"
         fetchListMap={fetchListMap}
         className={styles.list}
+        allowExternalSearch={false}
+        getListMap={getCachedTokenList}
       />
     </div>
   );

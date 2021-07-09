@@ -7,8 +7,7 @@
   --height: calc(100vh - var(--compensation-in-px));
   min-height: var(--height);
   height: var(--height);
-  padding-left: 15px; 
-  padding-right: 15px;
+  padding: 10px;
   background-image: linear-gradient(-45deg, #efefff 0%, #fff 100%);
 }
 

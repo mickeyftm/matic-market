@@ -1,19 +1,14 @@
-import styles from './style.module.css';
-export default function Help() {
-    return (
-        <div className={styles.help}>
-            <div className={styles.topics}>
-                {}
-            </div>
-            <div className={styles.preview}>
+import { getTopicContent, getTopics } from '@/pages/api/getHelpTopics';
+import HelpPage from './[...slug]';
 
-            </div>
-        </div>
-    )
+export default function Help(props) {
+    return <HelpPage {...props} />
 }
 
-// Help.getInitialProps = async () => {
-//     const res = await fetch('')
-//     const json = await res.json()
-//     return { stars: json.stargazers_count }
-// }
+export async function getStaticProps() {
+    let topics = await getTopics();
+    const selectedTopic = await getTopicContent(topics[0].topicId);
+    return {
+        props: { topics : topics, selectedTopic }
+    };
+}

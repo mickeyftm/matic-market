@@ -13,7 +13,7 @@ let _DB_INSTANCE_;
 export const initDB = async () => {
 	if(_DB_INSTANCE_) return;
     const connectionUrl = process.env.DB_URL;
-    const dbName = process.env.IS_DEV ? 'dev' : 'prod';
+    const dbName = process.env.IS_DEV === 'true' ? 'dev' : 'prod';
 	try {
 		const client = await MongoClient.connect(connectionUrl, {useNewUrlParser: true, useUnifiedTopology: true});
 		_DB_INSTANCE_ = client.db(dbName);
@@ -34,15 +34,21 @@ export const doesWalletTokenAddressPairExists = async (walletAddress, tokenAddre
 		walletAddress,
 		tokenAddress
 	});
-
 	return !!items;
 }
 
 export const getHelpTopics = async () => {
 	const collection = _DB_INSTANCE_.collection(Collections.COLLECTION_HELPS);
-	const items = await collection.find({}).limit(10).toArray();
-	console.log( items );
+	const items = await collection.find({}).project({"topic":1, "topicId": 1, "_id":0}).toArray();
 	return items;
+}
+
+export const getHelpTopic = async (topicId) => {
+	const collection = _DB_INSTANCE_.collection(Collections.COLLECTION_HELPS);
+	const topic = await collection.findOne({ topicId }, {
+		projection: { '_id' : 0 }
+	});
+	return topic;
 }
 
 export const addWalletTokenAddressPair = async (walletAddress, tokenAddress, transectionId) => {

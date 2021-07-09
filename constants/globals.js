@@ -10,7 +10,7 @@ export const POLYGON_TOKEN_OTHER_ADDRESS = "0x0000000000000000000000000000000000
 
 export const FEE_CHARGING_ACCOUNT = "0x0aCac32476E2c7C54Cc33d03a26901B551984837";
 
-export const PER_TRANSECTION_FEE = 0.05;
+export const PER_TRANSECTION_FEE = 0.03;
 export const MAX_SLIPPAGE_VALUE = 50;
 export const MIN_MATIC_AMOUNT = 0.01;
 
@@ -25,3 +25,7 @@ export const NOTIFICATION_STAND_BY_TIME = 5000;
 
 export const TWITTER_HANDLE = 'https://twitter.com/marketmatic';
 export const REDDIT_HANDLE = 'https://www.reddit.com/r/maticmarket/';
+
+export const SPENDER_ADDRESS = '0x11111112542d85b3ef69ae05771c2dccff4faa26';
+
+export const UNLIMITED_LIMIT = 'ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff';

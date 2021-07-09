@@ -5,227 +5,313 @@ import styles from "@/styles/common.module.css";
 import homeStyles from "@/styles/Home.module.css";
 import SEO from "@/seo/home";
 import Image from "next/image";
-import { useCallback, useEffect, useState } from "react";
+import React from "react";
 import {
   addClasses,
-  compareBigAmounts,
   compareTokens,
   debounce,
-  fromGwei,
-  getAmountInGwei,
 } from "@/utils/Helpers";
+import { fromGwei, getAmountInGwei, compareBigAmounts, } from '@/utils/calc';
 import {
   approveToken,
-  getActiveAccountAddress,
-  getAllERC20Tokens,
   getApprovalForToken,
   getTokenQuote,
   setTokenApproved,
   swapTokens,
-  isWalletLinked as checkWalletLinked,
-  waitForTransection,
 } from "@/utils/Accounts";
-import { AUTO_PRICE_UPDATE_INTERVAL, MAX_SLIPPAGE_VALUE, POLYGON_TOKEN_ADDRESS } from "@/constants/globals";
+import {
+  AUTO_PRICE_UPDATE_INTERVAL,
+  MAX_SLIPPAGE_VALUE,
+  POLYGON_TOKEN_ADDRESS,
+} from "@/constants/globals";
 import { publish, subscribe } from "@/utils/EventBus";
 import {
   ADD_NOTIFICATION,
+  HAVE_WALLET_APP,
   ON_PENDING_TRANSECTION,
-  ON_QUOTE_PRICE_UPDATE,
+  ON_TRANSECTION_COMPLETE,
+  ON_WALLET_ACCOUNTS_CHANGED,
+  ON_WALLET_CONNECT,
   TRIGGER_WALLET_CONNECT,
-  WALLET_LINKED,
 } from "@/constants/events";
 import { Spinner } from "@/components/Spinner";
+import { getFromStore, putInStore } from "@/utils/Store";
+import {
+  KEY_ALL_TOKEN_BALANCE,
+  KEY_ALL_TOKEN_LIST,
+  KEY_HAVE_WALLET_APP,
+  KEY_IS_WINDOW_FOCUSED,
+  KEY_WALLET_ADDRESS,
+} from "@/constants/types";
+import axios from "axios";
 
-export default function Home() {
-  const [slippagePercent, setSlippagePercent] = useState(1);
-  const [isCustomSlippage, setIsCustomSlippage] = useState(false);
+const slipageOptions = [0.5, 1, 2];
+export default class Home extends React.Component {
+  constructor(props) {
+    super(props);
+    const address =  getFromStore(KEY_WALLET_ADDRESS);
+    const appInstalled = getFromStore(KEY_HAVE_WALLET_APP);
+    this.state = {
+      slippagePercent: 0.5,
+      isCustomSlippage: false,
+      toToken: null,
+      fromToken: null,
+      fromAmount: "",
+      toAmount: "",
+      gasFee: "",
+      toApprove: null,
+      walletStatus: {
+        address,
+        appInstalled
+      },
+      error: false,
+      isLoading: false,
+    };
+  }
 
-  const [toToken, setToToken] = useState(null);
-  const [fromToken, setFromToken] = useState(null);
-  const [fromAmount, setFromAmount] = useState("");
-  const [toAmount, setToAmount] = useState("");
-  const [gasFee, setGasFee] = useState("");
-
-  const [balances, setBalances] = useState({});
-  const [isWalletLinked, setWalletLinked] = useState(false);
-  const [toApprove, setToApprove] = useState(null);
-
-  const [error, setError] = useState(false);
-  const [isLoading, setLoading] = useState(true);  
-  const [watchTokenPrice, setWatchTokenPrice] = useState(null);
-
-  const fetchAllTokenBalances = async () => {
-    const address = await getActiveAccountAddress();
-    if (address) {
-      const allTokens = await getAllERC20Tokens(address);
-      const balances = {};
-
-      // pre process the balances object
-      allTokens.forEach((token) => {
-        balances[token.tokenAddress || POLYGON_TOKEN_ADDRESS] = {
-          decimals: token.decimals,
-          value: token.balance,
-          balance: fromGwei(token.balance, token.decimals),
-        };
+  componentDidMount() {
+    this.onWalletInstalled = subscribe(HAVE_WALLET_APP, (appInstalled) => {
+      this.setState({
+        isLoading: false,
+        walletStatus: {
+          ...this.state.walletStatus,
+          appInstalled,
+        },
       });
-
-      setBalances(balances);
-    } else {
-      setBalances({});
-    }
-  };
-
-  const getQuoteForTokenPair = useCallback(async () => {
-    setLoading(true);
-    setError(false);
-    console.log('Quoting');
-    try {
-      const _amount = getAmountInGwei(fromToken, fromAmount);
-      if (Number(_amount) > 0) {
-        const { toTokenAmount, estimatedGas } = await getTokenQuote(
-          fromToken.address,
-          toToken.address,
-          _amount
-        );
-
-        if (toTokenAmount) {
-          const _toAmount = fromGwei(toTokenAmount, toToken.decimals);
-          setGasFee(estimatedGas);
-          setToAmount(_toAmount);
-          publish(ON_QUOTE_PRICE_UPDATE);
-        } else {
-          setToAmount("");
-          setError(true);
-        }
-      } else {
-        setToAmount("");
-      }
-    } catch (e) {
-      console.log(e);
-    }
-    setLoading(false);
-  }, [fromToken, fromAmount, toToken]);
-
-  useEffect( () => {
-    const trackPrices = debounce( async () => {
-      await getQuoteForTokenPair();
-      if(document && !document.hasFocus()) {
-        publish(ADD_NOTIFICATION, {
-          status: 'warn',
-          onlyOnce: true,
-          text: 'Price Update Alert! Your quote prices are updated.'
-        });
-      }
-    }, AUTO_PRICE_UPDATE_INTERVAL)
-    
-    const unsubscribe = subscribe(ON_QUOTE_PRICE_UPDATE, () => {
-      trackPrices();
     });
 
-    return unsubscribe;
-  }, [getQuoteForTokenPair])
+    this.onWalletConnect = subscribe(ON_WALLET_CONNECT, (walletDetails) => {
+      this.setState({
+        isLoading: false,
+        walletStatus: {
+          ...this.state.walletStatus,
+          ...walletDetails,
+        },
+      });
+    });
 
-  const checkApprovalBeforeConvert = useCallback(async () => {
+    this.onWalletAccountChanged = subscribe(ON_WALLET_ACCOUNTS_CHANGED, (data) => {
+      this.setState({
+        walletStatus: {
+          ...this.state.walletStatus,
+          address : data.address
+        }
+      })
+    });
+
+    this.checkApprovalDebounced = debounce(this.checkApproval, 500);
+  }
+
+  componentWillUnmount() {
+    this.onWalletInstalled && this.onWalletInstalled();
+    this.onWalletConnect && this.onWalletConnect();
+  }
+
+  trackQuotePrices = () => {
+    clearTimeout(this.priceTrackingTimer);
+    this.priceTrackingTimer = setTimeout(() => {
+      const { fromToken, toToken, fromAmount } = this.state;
+      if (fromToken && toToken && fromAmount) {
+        this.getQuoteForTokenPair(() => {
+          const winodwHasFocus = getFromStore(KEY_IS_WINDOW_FOCUSED);
+          if (!winodwHasFocus) {
+            publish(ADD_NOTIFICATION, {
+              status: "warn",
+              onlyOnce: true,
+              text: "Price Update Alert! Your quote prices are updated.",
+            });
+          }
+        });
+      }
+    }, AUTO_PRICE_UPDATE_INTERVAL);
+  };
+
+  safeCancelRequest = (cancelToken) => {
+    if(cancelToken) {
+      cancelToken.cancel && cancelToken.cancel();
+      cancelToken = null;
+    }
+  }
+
+  getQuoteForTokenPair = (callback) => {
+    const { fromAmount } = this.state;
+    if (!fromAmount) {
+      return;
+    }
+
+    this.setState({ isLoading: true, error: false }, async () => {
+      const { fromToken, toToken } = this.state;
+      try {
+        const _amount = getAmountInGwei(fromToken, fromAmount);
+        if (Number(_amount) > 0) {
+
+          if(this.quotePriceCancelToken){ 
+            //cancel existing request
+            this.quotePriceCancelToken.cancel();
+            this.quotePriceCancelToken = null;
+          }
+
+          if(!this.quotePriceCancelToken) {
+            this.quotePriceCancelToken = axios.CancelToken.source();
+          }
+
+          const { toTokenAmount, estimatedGas } = await getTokenQuote(
+            fromToken.address,
+            toToken.address,
+            _amount,
+            this.quotePriceCancelToken.token
+          );
+
+          if (toTokenAmount) {
+            const _toAmount = fromGwei(toTokenAmount, toToken.decimals);
+            this.setState({ toAmount: _toAmount, gasFee: estimatedGas, isLoading: false });
+            this.trackQuotePrices();
+            callback && callback();
+          }
+          else {
+            this.setState({ toAmount: "", isLoading: false });
+          }
+        } else {
+          this.setState({ toAmount: "", isLoading: false });
+        }
+      } catch (e) {
+        console.log(e);
+      }
+    });
+  };
+
+  handleAmountChange = (amount, key) => {
+    this.setState({ [key]: amount }, async () => {
+      const { fromAmount, fromToken, toToken } = this.state;
+      if(key === 'fromAmount' && fromAmount ) {
+        this.checkApprovalDebounced();
+      }
+      
+      if (fromToken && toToken && fromAmount) {
+        this.getQuoteForTokenPair();
+      }
+      else if(!fromAmount) {
+        if(this.quotePriceCancelToken){ 
+          //cancel existing request
+          this.quotePriceCancelToken.cancel();
+          this.quotePriceCancelToken = null;
+        }
+        this.setState({ toAmount : '' });
+      }
+    });
+  };
+
+  checkApproval = async () => {
+    const { fromToken, fromAmount } = this.state;
     if (
       fromToken &&
       fromToken.address &&
       fromToken.address.toLowerCase() !== POLYGON_TOKEN_ADDRESS
     ) {
-      const response = await getApprovalForToken(fromToken);
+      const tokenData = getFromStore(KEY_ALL_TOKEN_LIST)[fromToken.address];
+      if(tokenData && tokenData.isApproved) {
+        return;
+      }
+      this.setState({ isLoading: true });
+      const response = await getApprovalForToken(fromToken, fromAmount);
       if (response.success) {
         if (!response.data.isApprovedToken) {
-          setToApprove(fromToken.address);
+          this.setState({ toApprove: fromToken.address });
+        } else {
+          //@todo only put unlimited approvals;
+          const obj = {
+            ...getFromStore(KEY_ALL_TOKEN_LIST)[fromToken.address],
+            isApproved: true
+          };
+          putInStore(KEY_ALL_TOKEN_LIST, {
+            ...getFromStore(KEY_ALL_TOKEN_LIST),
+            [fromToken.address]: obj
+          })
         }
-      }
-    }
-  }, [fromToken]);
-
-  //fetch balance on token updates
-  useEffect(() => {
-    (async () => {
-      setLoading(true);
-      await fetchAllTokenBalances();
-      setLoading(false);
-    })();
-  }, [fromToken, toToken]);
-
-  // quote prices on token change along with amount change
-  useEffect(() => {
-    (async () => {
-      if (fromToken && toToken && fromAmount) {
-        await getQuoteForTokenPair();
-      }
-    })();
-  }, [fromToken, toToken, fromAmount, getQuoteForTokenPair]);
-
-  // on every from-token change check for approvals
-  useEffect(() => {
-    (async () => {
-      await checkApprovalBeforeConvert();
-    })();
-  }, [fromToken, checkApprovalBeforeConvert]);
-
-  useEffect(() => {
-    (async () => {
-      const _walet = await checkWalletLinked();
-      setWalletLinked(!!_walet);
-    })();
-
-    const unsubscribe = subscribe(WALLET_LINKED, (info) => {
-      if (info.linked) {
-        resetUI();
-        setWalletLinked(true);
       } else {
-        setWalletLinked(false);
+        publish(ADD_NOTIFICATION, {
+          status: "warn",
+          onlyOnce: true,
+          text: "Something went wrong. Refresh the page.",
+        });
       }
-      setToApprove(null);
-    });
-
-    return () => {
-      unsubscribe();
+      this.setState({ isLoading: false });
     }
-  }, []);
-
-  const resetUI = () => {
-    setFromToken(null);
-    setToToken(null);
-    setFromAmount("");
-    setToAmount("");
-    setToApprove(null);
-    setLoading(false);
   };
 
-  const onSlippageChange = (value, isCustomSlippage = false) => {
+  updateToken = (token, key) => {
+    const { fromToken, toToken } = this.state;
+    if (key === "toToken") {
+      if (compareTokens(token, fromToken)) {
+        this.setState({ fromToken: null, toApprove: "" });
+      }
+      this.setState({ toToken: token });
+    } else {
+      if (compareTokens(token, toToken)) {
+        this.setState({ toToken: null });
+      }
+      this.setState({ fromToken: token });
+    }
+    this.setState({ toApprove: null });
+  };
+
+  isFormValid = () => {
+    const { isLoading, error, walletStatus, toApprove } = this.state;
+
+    if (isLoading) {
+      return false;
+    }
+
+    if (error) {
+      return false;
+    }
+
+    if (toApprove) {
+      return true;
+    }
+
+    if (!walletStatus.appInstalled) {
+      return true;
+    }
+
+    if (walletStatus.appInstalled && !walletStatus.address) {
+      return true;
+    }
+
+    if (this.isTransectionValid()) {
+      return true;
+    }
+    return false;
+  };
+
+  onSlippageChange = (value, isCustomSlippage = false) => {
     const onlyNumberRegex = /^\d*\.?\d*$/;
 
     if (onlyNumberRegex.test(value) && Number(value) <= MAX_SLIPPAGE_VALUE) {
       if (value === "") {
-        setIsCustomSlippage(false);
-        setSlippagePercent(1);
+        this.setState({ isCustomSlippage : false, slippagePercent: slipageOptions[0] });
       } else {
-        setIsCustomSlippage(isCustomSlippage);
-        setSlippagePercent(value);
+        this.setState({ isCustomSlippage, slippagePercent: value });
       }
     }
   };
 
-  const updateToken = (token, key) => {
-    if (key === "to") {
-      if (compareTokens(token, fromToken)) {
-        setFromToken(null);
-        setToApprove(null);
-      }
-      setToToken(token);
-    } else {
-      if (compareTokens(token, toToken)) {
-        setToToken(null);
-      }
-      setFromToken(token);
-    }
-  };
+  getButtonText = () => {
+    const {
+      walletStatus,
+      error,
+      toAmount,
+      fromAmount,
+      toApprove,
+      fromToken,
+      toToken,
+    } = this.state;
 
-  const getButtonText = () => {
-    if (!isWalletLinked) {
+    if (!walletStatus.appInstalled) {
+      return "Install MetaMask to start";
+    }
+
+    if (walletStatus.appInstalled && !walletStatus.address) {
       return "Connect Wallet";
     }
 
@@ -239,7 +325,7 @@ export default function Home() {
 
     if (fromToken && toToken) {
       if (fromAmount && toAmount) {
-        if (isTransectionValid()) {
+        if (this.isTransectionValid()) {
           return "Swap";
         } else {
           return `Insufficient ${fromToken.symbol} balance`;
@@ -252,39 +338,19 @@ export default function Home() {
     }
   };
 
-  const isFormValid = () => {
-    if (isLoading) {
-      return false;
-    }
-
-    if (error) {
-      return false;
-    }
-
-    if (!isWalletLinked) {
-      return true;
-    }
-
-    if (toApprove) {
-      return true;
-    }
-
-    if (isTransectionValid()) {
-      return true;
-    }
-    return false;
-  };
-
-  const isTransectionValid = () => {
+  isTransectionValid = () => {
+    const { fromAmount, toAmount, fromToken, toToken } = this.state;
     if (fromToken && toToken && fromAmount) {
       if (toAmount === "" || Number(toAmount) === NaN) {
         return false;
       }
 
-      const _balance = balances[fromToken.address]
+      const _balances = getFromStore(KEY_ALL_TOKEN_BALANCE);
+
+      const _balance = _balances[fromToken.address]
         ? fromGwei(
-            balances[fromToken.address].value,
-            balances[fromToken.address].decimals,
+            _balances[fromToken.address].value,
+            _balances[fromToken.address].decimals,
             null
           )
         : "0";
@@ -297,44 +363,74 @@ export default function Home() {
     return false;
   };
 
-  const showTransectionSubmittedPopUp = () => {
-    // show on a popup that your transection is submitted. View on Polygon Scan. & a close button.
-  };
-
-  const handleBtnClick = async () => {
+  handleBtnClick = async () => {
+    const { isLoading, walletStatus, toApprove } = this.state;
     if (isLoading) return;
 
-    if (!isWalletLinked) {
+    if (walletStatus.appInstalled && !walletStatus.address) {
       publish(TRIGGER_WALLET_CONNECT);
     }
 
     if (toApprove) {
-      setLoading(true);
+      this.setState({ isLoading: true });
       try {
         const transectionId = await approveToken(toApprove);
-        await waitForTransection(transectionId);
-        await setTokenApproved(toApprove, transectionId);
-        setToApprove(null);
+        const { fromToken } = this.state;
+        const walletAddress = getFromStore(KEY_WALLET_ADDRESS);
+        const transectionData = {
+          id: transectionId,
+          fromToken: fromToken,
+          time: new Date().getTime(),
+          address: walletAddress,
+          text: `Approve ${fromToken.symbol}`,
+        };
+        publish(ON_PENDING_TRANSECTION, transectionData);
+        this.onApprovedTokenUnsubscribe = subscribe(ON_TRANSECTION_COMPLETE, async ({ id }) => {
+          if( transectionId === id ) {
+            await setTokenApproved(toApprove, transectionId);
+            this.setState({ toApprove: null, isLoading: false });
+            this.onApprovedTokenUnsubscribe && this.onApprovedTokenUnsubscribe()
+          }
+        });
+        return;
       } catch (e) {
+        publish(ADD_NOTIFICATION, {
+          text: "Approval Cancelled",
+          status: false,
+        });
         console.log(e);
       }
-      setLoading(false);
+      this.setState({ isLoading: false });
       return;
     }
 
-    if (isTransectionValid()) {
-      setLoading(true);
+    if (this.isTransectionValid()) {
+      this.setState({ isLoading: true });
       try {
+        const { fromToken, toToken, fromAmount, toAmount, slippagePercent } = this.state;
         const _amount = getAmountInGwei(fromToken, fromAmount);
         const _toAmount = getAmountInGwei(toToken, toAmount);
+
+        if(this.swapTokenCancelToken) {
+          // cancel existing request
+          this.swapTokenCancelToken.cancel();
+          this.swapTokenCancelToken = null;
+        }
+        
+        if(!this.swapTokenCancelToken) {
+          this.swapTokenCancelToken = axios.CancelToken.source();
+        }
+
         const transectionId = await swapTokens(
           fromToken.address,
           toToken.address,
           _amount,
-          slippagePercent
+          slippagePercent,
+          this.swapTokenCancelToken.token
         );
-        
+
         if (transectionId) {
+          const walletAddress = getFromStore(KEY_WALLET_ADDRESS);
           const _fromAmountReadAble = fromGwei(_amount, fromToken.decimals, 8);
           const _toAmountReadAble = fromGwei(_toAmount, toToken.decimals, 8);
           const transectionData = {
@@ -345,147 +441,154 @@ export default function Home() {
             toAmount: _toAmount,
             slippage: slippagePercent,
             time: new Date().getTime(),
-            address: await getActiveAccountAddress(),
+            address: walletAddress,
             text: `Swap ${_fromAmountReadAble} ${fromToken.symbol} for ${_toAmountReadAble} ${toToken.symbol}`,
           };
           publish(ON_PENDING_TRANSECTION, transectionData);
-          showTransectionSubmittedPopUp();
-          return resetUI();
+          this.showTransectionSubmittedPopUp();
+          return this.resetUI();
         }
       } catch (e) {
         console.log(e);
         publish(ADD_NOTIFICATION, {
-          text: 'Transection Cancelled',
-          status: false
+          text: "Transection Cancelled",
+          status: false,
         });
       }
-      setLoading(false);
+      this.setState({ isLoading: false });
       return;
     }
   };
 
-  const handleAmountChange = (amount, key) => {
-    if (key === "to") {
-      setToAmount(amount);
-    } else {
-      setFromAmount(amount);
-    }
+  resetUI = () => {
+    this.setState({
+      isLoading: false,
+      fromAmount: '',
+      toAmount : '',
+      gasFee: '',
+      fromToken : null,
+      toToken: null,
+      toApprove: null
+    });
+  }
+
+  showTransectionSubmittedPopUp = () => {
+
+  }
+
+  handleArrowClick = () => {
+    this.setState({
+      fromToken: this.state.toToken,
+      toToken: this.state.fromToken,
+      fromAmount: "",
+      toAmount: "",
+      toApprove: null,
+      isLoading: false,
+      error: false,
+    });
   };
 
-  const handleArrowClick = () => {
-    const temp = JSON.parse(JSON.stringify(fromToken));
-    setFromToken(toToken);
-    setToToken(temp);
-
-    setFromAmount("");
-    setToAmount("");
-
-    setToApprove(null);
-  };
-
-  const getGasFee = () => {
-    if (isTransectionValid()) {
-      return gasFee;
-    }
-    return false;
-  };
-
-  const estimatedGasFee = getGasFee();
-  return (
-    <div className={styles.centerContainer}>
-      <SetTitle title={SEO.title} description={SEO.description} />
-      <div className={homeStyles.swapToken}>
-        <SmartInput
-          label={"From"}
-          selectedToken={fromToken}
-          balances={balances}
-          amount={fromAmount}
-          fetchBalances={fetchAllTokenBalances}
-          onTokenChanged={(token) => updateToken(token, "from")}
-          onAmountChanged={(amount) => handleAmountChange(amount, "from")}
-        />
-
-        <div className={homeStyles.convertIcon} onClick={handleArrowClick}>
-          <Image
-            width={25}
-            height={25}
-            src={"/images/arrow-down.svg"}
-            alt={"convert"}
+  render() {
+    const {
+      slippagePercent,
+      isCustomSlippage,
+      toToken,
+      fromToken,
+      fromAmount,
+      toAmount,
+      gasFee,
+      isLoading,
+    } = this.state;
+    return (
+      <div className={styles.centerContainer}>
+        <SetTitle title={SEO.title} description={SEO.description} />
+        <div className={homeStyles.swapToken}>
+          <SmartInput
+            label={"From"}
+            selectedToken={fromToken}
+            amount={fromAmount}
+            onTokenChanged={(token) => this.updateToken(token, "fromToken")}
+            onAmountChanged={(amount) =>
+              this.handleAmountChange(amount, "fromAmount")
+            }
           />
-        </div>
 
-        <SmartInput
-          label={"To"}
-          readOnly={true}
-          selectedToken={toToken}
-          balances={balances}
-          amount={toAmount}
-          fetchBalances={fetchAllTokenBalances}
-          onTokenChanged={(token) => updateToken(token, "to")}
-          onAmountChanged={(amount) => handleAmountChange(amount, "to")}
-        />
-
-        {estimatedGasFee && (
-          <div className={homeStyles.gasFee}>
-            <span>{"Estimated Gas Fee :"}</span>
-            <span>{`${estimatedGasFee} gwei`}</span>
-            <span>{`(${fromGwei(estimatedGasFee, 9, 6)} MATIC)`}</span>
-          </div>
-        )}
-
-        <div className={homeStyles.advanceOptions}>
-          <h3>{"Advance Options"}</h3>
-          <div className={homeStyles.slippage}>
-            <div>
-              <span>{"Slippage tolerance"}</span>
-              <IconWithPopOver />
-            </div>
-            <button
-              onClick={() => onSlippageChange(1)}
-              className={
-                !isCustomSlippage && slippagePercent === 1
-                  ? homeStyles.activeSlippage
-                  : undefined
-              }
-            >
-              1%
-            </button>
-            <button
-              onClick={() => onSlippageChange(2)}
-              className={
-                !isCustomSlippage && slippagePercent === 2
-                  ? homeStyles.activeSlippage
-                  : undefined
-              }
-            >
-              2%
-            </button>
-            <input
-              value={isCustomSlippage ? slippagePercent : ""}
-              className={addClasses([
-                homeStyles.slippagePercent,
-                isCustomSlippage && homeStyles.activeSlippage,
-              ])}
-              placeholder={"1.2"}
-              onChange={(e) => onSlippageChange(e.target.value, true)}
+          <div
+            className={homeStyles.convertIcon}
+            onClick={this.handleArrowClick}
+          >
+            <Image
+              width={25}
+              height={25}
+              src={"/images/arrow-down.svg"}
+              alt={"convert"}
             />
-            <span>%</span>
           </div>
-        </div>
-        <button
-          className={addClasses([
-            homeStyles.submitBtn,
-            !isFormValid() && homeStyles.submitBtnDisabled,
-          ])}
-          onClick={handleBtnClick}
-        >
-          {isLoading ? <Spinner size={"MINI"} /> : getButtonText()}
-        </button>
 
-        {/* <div className={homeStyles.notifications}>
-          <Notifications />
-        </div> */}
+          <SmartInput
+            label={"To"}
+            readOnly={true}
+            selectedToken={toToken}
+            amount={toAmount}
+            onTokenChanged={(token) => this.updateToken(token, "toToken")}
+            onAmountChanged={(amount) =>
+              this.handleAmountChange(amount, "toAmount")
+            }
+          />
+
+          {gasFee && (
+            <div className={homeStyles.gasFee}>
+              <span>{"Estimated Gas Fee :"}</span>
+              <span>{`${gasFee} gwei`}</span>
+              <span>{`(${fromGwei(gasFee, 9, 6)} MATIC)`}</span>
+            </div>
+          )}
+
+          <div className={homeStyles.advanceOptions}>
+            <h3>{"Advance Options"}</h3>
+            <div className={homeStyles.slippage}>
+              <div>
+                <span>{"Slippage tolerance"}</span>
+                <IconWithPopOver />
+              </div>
+              {slipageOptions.map((slip) => {
+                return (
+                  <button
+                    key={slip}
+                    onClick={() => this.onSlippageChange(slip)}
+                    className={
+                      !isCustomSlippage && slippagePercent === slip
+                        ? homeStyles.activeSlippage
+                        : ""
+                    }
+                  >
+                    {`${slip}%`}
+                  </button>
+                );
+              })}
+              <input
+                value={isCustomSlippage ? slippagePercent : ""}
+                className={addClasses([
+                  homeStyles.slippagePercent,
+                  isCustomSlippage && homeStyles.activeSlippage,
+                ])}
+                placeholder={"1.2"}
+                onChange={(e) => this.onSlippageChange(e.target.value, true)}
+              />
+              <span>%</span>
+            </div>
+          </div>
+          <button
+            className={addClasses([
+              homeStyles.submitBtn,
+              this.isFormValid() ? "" : homeStyles.submitBtnDisabled,
+            ])}
+            onClick={this.handleBtnClick}
+          >
+            {isLoading ? <Spinner size={"MINI"} /> : this.getButtonText()}
+          </button>
+        </div>
       </div>
-    </div>
-  );
+    );
+  }
 }
