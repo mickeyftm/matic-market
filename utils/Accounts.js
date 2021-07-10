@@ -32,12 +32,15 @@ import {
   KEY_WALLET_ADDRESS,
   KEY_WALLET_RAW_BALANCE,
 } from "@/constants/types";
+import { getAllERC20Tokens } from "@/utils/Moralis";
 
 export function haveMetaMask() {
-  const provider = window.ethereum;
-  if (provider) {
-    return provider.isMetaMask;
-  }
+  try {
+    const provider = window.ethereum;
+    if (provider) {
+      return provider.isMetaMask;
+    }
+  } catch{}
   return false;
 }
 
@@ -303,6 +306,24 @@ export const getExplorerTransectionLink = (transectionId) => {
   return `${EXPLORER_TRANSECTION_LINK}${transectionId}`;
 };
 
+export async function getTransectionStatus(transectionId) {
+  if (haveMetaMask()) {
+    const transectionStatus = await window.ethereum.request({
+      method: "eth_getTransactionReceipt",
+      params: [transectionId],
+    });
+
+    if (transectionStatus) {
+      transectionStatus.status = parseInt(transectionStatus.status)
+        ? true
+        : false;
+    }
+    console.log(transectionStatus);
+    return transectionStatus;
+  }
+  return null;
+}
+
 export async function waitForTransection(
   transectionId,
   pollingTime = 3000,
@@ -313,8 +334,7 @@ export async function waitForTransection(
       let timer;
       timer = setInterval(async () => {
         try {
-          const Moralis = await import("@/utils/Moralis");
-          const status = await Moralis.getTransectionStatus(transectionId);
+          const status = await getTransectionStatus(transectionId);
           if (status) {
             clearInterval(timer);
             if (EVENT_NAME) {
@@ -335,14 +355,16 @@ export async function getApprovalForToken(token, amount) {
   const walletAddress =
     getFromStore(KEY_WALLET_ADDRESS) || (await getActiveAccountAddress());
 
-  const amountInGwei = getAmountInGwei(token, amount);
-  const { data } = await axios.post(FETCH_APPROVED_TOKEN, {
-    walletAddress,
-    amount: amountInGwei,
-    tokenAddress: token.address,
-  });
-
-  return data;
+  if( walletAddress ) {
+    const amountInGwei = getAmountInGwei(token, amount);
+    const { data } = await axios.post(FETCH_APPROVED_TOKEN, {
+      walletAddress,
+      amount: amountInGwei,
+      tokenAddress: token.address,
+    });
+    return data;
+  }
+  return null;
 }
 
 async function getTokenQuoteHelper(
@@ -437,8 +459,7 @@ export const gatherAllTokenBalances = async () => {
   const address =
     getFromStore(KEY_WALLET_ADDRESS) || (await getActiveAccountAddress());
   if (address) {
-    const Moralis = await import("@/utils/Moralis");
-    const allTokenBalance = await Moralis.getAllERC20Tokens(address);
+    const allTokenBalance = await getAllERC20Tokens(address);
     const balances = {};
 
     // pre process the balances object

@@ -8,6 +8,7 @@ import {
   getRawBalance,
   switchToPolygonSafely,
   getSeedForJazzi,
+  haveMetaMask,
 } from "@/utils/Accounts";
 import { useCallback, useEffect, useState } from "react";
 import { publish, subscribe } from "@/utils/EventBus";
@@ -21,7 +22,7 @@ import {
   TOGGLE_OVERLAY_VISIBILITY,
   TRIGGER_WALLET_CONNECT,
 } from "@/constants/events";
-import { copyTextToClipboard, middleEllipsis } from "@/utils/Helpers";
+import { copyTextToClipboard, middleEllipsis, openUrlInNewTab } from "@/utils/Helpers";
 import styles from "./style.module.css";
 import {
   KEY_CHAIN_DETAILS,
@@ -39,6 +40,7 @@ import { PENDING_STATUS } from "@/constants/lables";
 import { Spinner } from "../Spinner";
 import notiStyles from "@/components/Notifications/style.module.css";
 import { getFromStore } from "@/utils/Store";
+import { METAMASK_INSTALL_URL } from "@/constants/urls";
 
 export const Wallet = () => {
   const walletAddress = getFromStore(KEY_WALLET_ADDRESS);
@@ -260,7 +262,11 @@ export const Wallet = () => {
     if (wallet) {
       showWalletDetails();
     } else {
-      showWalletConnectPopup();
+      if(haveMetaMask()){
+        showWalletConnectPopup();
+      } else {
+        openUrlInNewTab(METAMASK_INSTALL_URL);
+      }
     }
   };
 
@@ -282,7 +288,7 @@ export const Wallet = () => {
   const isValid = isValidState();
   return (
     <div className={styles.wallet}>
-      {
+      { haveMetaMask() &&
         <span className={styles.chain} onClick={handleChainClick}>
           {isValid ? "Polygon" : "Switch To Polygon"}
         </span>
@@ -292,12 +298,12 @@ export const Wallet = () => {
           {`${walletBalance} ${DEFAULT_CURRENCY}`}
         </div>
       )}
-      {isValid && (
+      {/* {isValid && ( */}
         <div className={styles.address} onClick={handleWalletClick}>
-          <span>{wallet ? middleEllipsis(wallet, 16) : "Connect Wallet"}</span>
+          <span>{wallet ? middleEllipsis(wallet, 16) : haveMetaMask() ? "Connect Wallet" : "Install MetaMask"}</span>
           {wallet && <Jazzicon diameter={16} seed={getSeedForJazzi(wallet)} />}
         </div>
-      )}
+      {/* )} */}
     </div>
   );
 };

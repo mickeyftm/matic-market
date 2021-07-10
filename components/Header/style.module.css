@@ -61,6 +61,7 @@
 .navItem {
   font-size: var(--font-size-default);
   margin-right: 25px;
+  color: var(--font-dim-color);
 }
 
 .navItem:hover, .navItem:focus {

@@ -10,6 +10,7 @@ import SEO from "@/seo/assets";
 import { getFromStore } from "@/utils/Store";
 import { KEY_ALL_TOKEN_LIST, KEY_WALLET_ADDRESS } from "@/constants/types";
 import { useState } from "react";
+import { getAllERC20Tokens } from "@/utils/Moralis";
 
 export default function Assets() {
   const [balances, setBalances] = useState({});
@@ -17,9 +18,7 @@ export default function Assets() {
     const walletAddress =
       getFromStore(KEY_WALLET_ADDRESS) || (await getActiveAccountAddress());
     if (walletAddress) {
-
-      const Moralis = await import('@/utils/Moralis');
-      const allTokens = await Moralis.getAllERC20Tokens(walletAddress);
+      const allTokens = await getAllERC20Tokens(walletAddress);
       const _balances = {};
 
       allTokens.forEach((token) => {

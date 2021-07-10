@@ -17,6 +17,7 @@ import Image from "next/image";
 import { MIN_MATIC_AMOUNT, POLYGON_TOKEN_ADDRESS } from "@/constants/globals";
 import { getFromStore } from "@/utils/Store";
 import { gatherAllTokenBalances, getAllTokenList } from "@/utils/Accounts";
+import { getERC20TokenDetails } from "@/utils/Moralis";
 
 export const SmartInput = ({
   label,
@@ -32,8 +33,23 @@ export const SmartInput = ({
   const onlyNumberRegex = /^\d*\.?\d*$/;
 
   useEffect(() => {
-    setSelectedToken(selectedTokenVal);
-  }, [selectedTokenVal]);
+    if(typeof selectedTokenVal === 'string' || selectedTokenVal instanceof String){
+      (async () => {
+        const tokens = await getTokenList();
+        if(tokens[selectedTokenVal]){
+          const _token = tokens[selectedTokenVal];
+          setSelectedToken(_token);
+          onTokenChanged && onTokenChanged(_token);
+        } else {
+          const details = await onExternalSearch(selectedTokenVal);
+          setSelectedToken(details);
+          onTokenChanged && onTokenChanged(details);
+        }
+      })();
+    } else {
+      setSelectedToken(selectedTokenVal);
+    }
+  }, [selectedTokenVal, onTokenChanged]);
 
   useEffect(() => {
     setAmount(amountVal);
@@ -91,13 +107,13 @@ export const SmartInput = ({
 
   const onExternalSearch = async (query, setListItems) => {
     const _address = query;
-    const Moralis = await import('@/utils/Moralis');
-    const details = await Moralis.getERC20TokenDetails(_address);
+    const details = await getERC20TokenDetails(_address);
     if (details) {
-      setListItems([query.trim()]);
+      setListItems && setListItems([query.trim()]);
     } else {
-      setListItems([]);
+      setListItems && setListItems([]);
     }
+    return details;
   };
 
   const getCachedTokenList = () => {
@@ -134,7 +150,7 @@ export const SmartInput = ({
       const balanceObj = allTokenBalance[token ? token.address : ""];
       return `${prefix}${balanceObj ? balanceObj.balance : "0"}`;
     }
-    return "-";
+    return "";
   };
 
   return (

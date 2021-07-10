@@ -15,7 +15,6 @@ export const initDB = async () => {
     const connectionUrl = process.env.DB_URL;
     const dbName = process.env.IS_DEV === 'true' ? 'dev' : 'prod';
 	try {
-		console.log('---> connection url', connectionUrl);
 		const client = await MongoClient.connect(connectionUrl, {useNewUrlParser: true, useUnifiedTopology: true});
 		_DB_INSTANCE_ = client.db(dbName);
 		console.log('--> Connected to DB : ' + dbName);

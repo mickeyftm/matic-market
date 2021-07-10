@@ -9,22 +9,20 @@ import { HELP_PAGE_REVALIDATE_TIME } from "@/constants/globals";
 
 export default function Help({ topics, selectedTopic }) {
   const [activeTopics, setActiveTopics] = useState(topics || []);
-
   const [query, setQuery] = useState("");
   const onSearch = (event) => {
     const query = event?.target?.value || "";
     setQuery(query);
 
     const searchQuery = query.toLowerCase().trim();
-    const filteredTopics = topics.filter((topicItem) =>
-      topicItem.topic.toLowerCase().includes(searchQuery)
+    const filteredTopics = topics.filter((topicItem) => topicItem && topicItem.topic && topicItem.topic.toLowerCase().includes(searchQuery)
     );
     setActiveTopics(filteredTopics);
   };
 
   return (
     <div className={styles.help}>
-      <SetTitle title={selectedTopic.topic} description={"Find out how"} />
+      <SetTitle title={selectedTopic && selectedTopic.topic} description={"Find out how"} />
       <div className={styles.topics}>
         <div className={styles.searchInput}>
           <input
@@ -37,7 +35,7 @@ export default function Help({ topics, selectedTopic }) {
         <ul className={styles.topicsList}>
           {activeTopics &&
             activeTopics.map((topic, index) => {
-              return (
+              return ( topic &&
                 <li
                   key={index}
                   className={addClasses([

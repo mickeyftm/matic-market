@@ -32,14 +32,6 @@ export const Notifications = () => {
     }
   }, [notificationList]);
 
-  const removeTopNotification = useCallback(() => {
-    if(notificationList.length > 0 ){
-      const _notifications = [...notificationList];
-      _notifications.shift();
-      setNotificationList(_notifications);
-    }
-  }, [notificationList]);
-
   useEffect(() => {
     const unsubscribe = subscribe(ADD_NOTIFICATION, (noti) => {
       addNotification(noti);
@@ -59,12 +51,14 @@ export const Notifications = () => {
   }, [addNotification]);
 
   useEffect(() => {
-    if(userFocused) {
-      setTimeout(() => {
-        removeTopNotification();
-      }, NOTIFICATION_STAND_BY_TIME);
-    }
-  }, [removeTopNotification, userFocused]);
+    setTimeout(() => {
+      if(userFocused && notificationList.length > 0 ){
+        const _notifications = [...notificationList];
+        _notifications.shift();
+        setNotificationList(_notifications);
+      }
+    }, NOTIFICATION_STAND_BY_TIME);
+  }, [userFocused, notificationList]);
 
   const getNotificationIcon = (status) => {
     switch (status) {

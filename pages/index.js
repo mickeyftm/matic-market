@@ -15,6 +15,7 @@ import {
 import { fromGwei, getAmountInGwei, compareBigAmounts } from "@/utils/calc";
 import {
   approveToken,
+  getAllTokenList,
   getApprovalForToken,
   getTokenQuote,
   setTokenApproved,
@@ -46,13 +47,15 @@ import {
 } from "@/constants/types";
 import axios from "axios";
 import { METAMASK_INSTALL_URL } from "@/constants/urls";
+import { withRouter } from "next/router";
 
 const slipageOptions = [0.5, 1, 2];
-export default class Home extends React.Component {
+class Home extends React.Component {
   constructor(props) {
     super(props);
     const address = getFromStore(KEY_WALLET_ADDRESS);
     const appInstalled = getFromStore(KEY_HAVE_WALLET_APP);
+
     this.state = {
       slippagePercent: 0.5,
       isCustomSlippage: false,
@@ -69,6 +72,25 @@ export default class Home extends React.Component {
       error: false,
       isLoading: false,
     };
+  }
+
+  UNSAFE_componentWillReceiveProps(nextProps) {
+    if (nextProps.router?.query) {
+      const outerToToken = nextProps.router?.query?.toToken;
+      if (outerToToken) {
+        this.updateToken(outerToToken, "toToken");
+      }
+
+      const outerFromToken = nextProps.router?.query?.fromToken;
+      if (outerFromToken) {
+        this.updateToken(outerFromToken, "fromToken");
+      }
+
+      const outerAmount = nextProps.router?.query?.amount;
+      if (outerAmount) {
+        this.handleAmountChange(outerAmount, "fromAmount");
+      }
+    }
   }
 
   componentDidMount() {
@@ -218,7 +240,7 @@ export default class Home extends React.Component {
       }
       this.setState({ isLoading: true });
       const response = await getApprovalForToken(fromToken, fromAmount);
-      if (response.success) {
+      if (response && response.success) {
         if (!response.data.isApprovedToken) {
           this.setState({ toApprove: fromToken.address });
         } else {
@@ -234,11 +256,11 @@ export default class Home extends React.Component {
           }
         }
       } else {
-        publish(ADD_NOTIFICATION, {
-          status: "warn",
-          onlyOnce: true,
-          text: "Something went wrong. Refresh the page.",
-        });
+        // publish(ADD_NOTIFICATION, {
+        //   status: "warn",
+        //   onlyOnce: true,
+        //   text: "Something went wrong. Refresh the page.",
+        // });
         this.setState({ error: true });
       }
       this.setState({ isLoading: this.state.isLoading ? true : false });
@@ -397,22 +419,10 @@ export default class Home extends React.Component {
           address: walletAddress,
           text: `Approve ${fromToken.symbol}`,
         };
-        publish(ON_PENDING_TRANSECTION, transectionData);
-        this.onApprovedTokenUnsubscribe = subscribe(
-          ON_TRANSECTION_COMPLETE,
-          async ({ id }) => {
-            if (transectionId === id) {
-              await setTokenApproved(toApprove, transectionId);
-              this.setState({ toApprove: null, isLoading: false });
-              this.onApprovedTokenUnsubscribe &&
-                this.onApprovedTokenUnsubscribe();
-            }
-          }
-        );
-        return;
+        return publish(ON_PENDING_TRANSECTION, transectionData);
       } catch (e) {
         publish(ADD_NOTIFICATION, {
-          text: "Approval Cancelled",
+          text: "Token approval cancelled.",
           status: false,
         });
         console.error(e);
@@ -608,3 +618,5 @@ export default class Home extends React.Component {
     );
   }
 }
+
+export default withRouter(Home);

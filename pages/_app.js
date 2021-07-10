@@ -36,6 +36,9 @@ import {
 
 function MyApp({ Component, pageProps }) {
   useEffect(() => {
+    
+    document.documentElement.lang = 'en-us';
+
     const timedExecution = setTimeout(async () => {
       const haveMetaMaskInstalled = getFromStore(KEY_HAVE_WALLET_APP);
       if (haveMetaMaskInstalled) {
