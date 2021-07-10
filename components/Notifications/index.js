@@ -33,9 +33,11 @@ export const Notifications = () => {
   }, [notificationList]);
 
   const removeTopNotification = useCallback(() => {
-    const _notifications = [...notificationList];
-    _notifications.shift();
-    setNotificationList(_notifications);
+    if(notificationList.length > 0 ){
+      const _notifications = [...notificationList];
+      _notifications.shift();
+      setNotificationList(_notifications);
+    }
   }, [notificationList]);
 
   useEffect(() => {

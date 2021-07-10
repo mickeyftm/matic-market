@@ -14,6 +14,10 @@ export const addClasses = (classes) => {
   return classString;
 };
 
+export function openUrlInNewTab(url) {
+  window.open(url, "_blank").focus();
+}
+
 export function middleEllipsis(str, max, sep = "...") {
   max = max || 10;
   var len = str.length;
@@ -114,7 +118,7 @@ function fallbackCopyTextToClipboard(text) {
   try {
     var successful = document.execCommand("copy");
     var msg = successful ? "successful" : "unsuccessful";
-    console.log("Fallback: Copying text command was " + msg);
+    // console.log("Fallback: Copying text command was " + msg);
   } catch (err) {
     console.error("Fallback: Oops, unable to copy", err);
   }

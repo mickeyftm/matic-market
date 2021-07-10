@@ -33,7 +33,7 @@ export const Footer = () => {
 
         <div className={styles.version}>
           <span>
-            {`Beta Version  ${APP_VERSION}`}
+            {`Version ${APP_VERSION}`}
           </span>
         </div>
 	  </footer>

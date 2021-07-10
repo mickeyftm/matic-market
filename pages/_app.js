@@ -58,7 +58,7 @@ function MyApp({ Component, pageProps }) {
           rawBalance: wallet_balance,
         });
       }
-    }, 3000);
+    }, 1500);
 
     onWalletConnect(async ({ chainId }) => {
       timedExecution && clearTimeout(timedExecution);

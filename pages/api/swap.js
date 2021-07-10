@@ -16,7 +16,7 @@ export default async function handler(req, res) {
             const { data } = await axios.get(`https://api.1inch.exchange/v3.0/137/swap?fromTokenAddress=${fromTokenAddress}&toTokenAddress=${toTokenAddress}&amount=${amount}&fromAddress=${fromAddress}&slippage=${slippage}&referrerAddress=${FEE_CHARGING_ACCOUNT}&fee=${PER_TRANSECTION_FEE}`);
             return res.status(200).json({ success: true, data });
         } catch(e) {
-            console.log(e);
+            console.error(e);
             return res.status(200).json({ success: false });
         }
     }

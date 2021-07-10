@@ -20,7 +20,7 @@ export function subscribe(eventType, callback) {
 }
 
 export function publish(eventType, arg) {
-  console.log("EventBus::" + eventType);
+  // console.log("EventBus::" + eventType);
   if (!subscriptions[eventType]) return;
 
   Object.keys(subscriptions[eventType]).forEach((key) =>

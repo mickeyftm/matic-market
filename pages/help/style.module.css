@@ -65,11 +65,28 @@
     padding: 15px;
     line-height: 1.5;
     overflow-y: scroll;
+    font-size: 18px;
+    color: var(--font-dim-color);
+    font-family: ubuntu-light;
 }
+
 .preview h1 {
     font-size: 30px;
+    font-weight: 600;
+    color: var(--font-color);
+    font-family: ubuntu-regular;
     text-align: center;
     margin-bottom: 30px;
+}
+
+.preview em {
+    font-style: italic;
+}
+
+.preview strong {
+    font-weight: 600;
+    color: var(--font-color);
+    font-family: ubuntu-regular;
 }
 
 .preview a {

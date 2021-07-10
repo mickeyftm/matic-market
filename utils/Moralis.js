@@ -17,7 +17,7 @@ export async function getAllERC20Tokens(address) {
     const balances = await Moralis.Web3.getAllERC20(options);
     return balances;
   } catch (e) {
-    console.log("Request Rejected", e);
+    console.error("Request Rejected", e);
   }
 }
 

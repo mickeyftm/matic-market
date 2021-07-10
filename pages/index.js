@@ -10,8 +10,9 @@ import {
   addClasses,
   compareTokens,
   debounce,
+  openUrlInNewTab,
 } from "@/utils/Helpers";
-import { fromGwei, getAmountInGwei, compareBigAmounts, } from '@/utils/calc';
+import { fromGwei, getAmountInGwei, compareBigAmounts } from "@/utils/calc";
 import {
   approveToken,
   getApprovalForToken,
@@ -44,12 +45,13 @@ import {
   KEY_WALLET_ADDRESS,
 } from "@/constants/types";
 import axios from "axios";
+import { METAMASK_INSTALL_URL } from "@/constants/urls";
 
 const slipageOptions = [0.5, 1, 2];
 export default class Home extends React.Component {
   constructor(props) {
     super(props);
-    const address =  getFromStore(KEY_WALLET_ADDRESS);
+    const address = getFromStore(KEY_WALLET_ADDRESS);
     const appInstalled = getFromStore(KEY_HAVE_WALLET_APP);
     this.state = {
       slippagePercent: 0.5,
@@ -62,7 +64,7 @@ export default class Home extends React.Component {
       toApprove: null,
       walletStatus: {
         address,
-        appInstalled
+        appInstalled,
       },
       error: false,
       isLoading: false,
@@ -90,14 +92,17 @@ export default class Home extends React.Component {
       });
     });
 
-    this.onWalletAccountChanged = subscribe(ON_WALLET_ACCOUNTS_CHANGED, (data) => {
-      this.setState({
-        walletStatus: {
-          ...this.state.walletStatus,
-          address : data.address
-        }
-      })
-    });
+    this.onWalletAccountChanged = subscribe(
+      ON_WALLET_ACCOUNTS_CHANGED,
+      (data) => {
+        this.setState({
+          walletStatus: {
+            ...this.state.walletStatus,
+            address: data.address,
+          },
+        });
+      }
+    );
 
     this.checkApprovalDebounced = debounce(this.checkApproval, 500);
   }
@@ -113,25 +118,23 @@ export default class Home extends React.Component {
       const { fromToken, toToken, fromAmount } = this.state;
       if (fromToken && toToken && fromAmount) {
         this.getQuoteForTokenPair(() => {
-          const winodwHasFocus = getFromStore(KEY_IS_WINDOW_FOCUSED);
-          if (!winodwHasFocus) {
-            publish(ADD_NOTIFICATION, {
-              status: "warn",
-              onlyOnce: true,
-              text: "Price Update Alert! Your quote prices are updated.",
-            });
-          }
+          // const winodwHasFocus = getFromStore(KEY_IS_WINDOW_FOCUSED);
+          publish(ADD_NOTIFICATION, {
+            status: "warn",
+            onlyOnce: true,
+            text: "Price Update Alert! Your quote prices are updated.",
+          });
         });
       }
     }, AUTO_PRICE_UPDATE_INTERVAL);
   };
 
   safeCancelRequest = (cancelToken) => {
-    if(cancelToken) {
+    if (cancelToken) {
       cancelToken.cancel && cancelToken.cancel();
       cancelToken = null;
     }
-  }
+  };
 
   getQuoteForTokenPair = (callback) => {
     const { fromAmount } = this.state;
@@ -144,14 +147,13 @@ export default class Home extends React.Component {
       try {
         const _amount = getAmountInGwei(fromToken, fromAmount);
         if (Number(_amount) > 0) {
-
-          if(this.quotePriceCancelToken){ 
+          if (this.quotePriceCancelToken) {
             //cancel existing request
             this.quotePriceCancelToken.cancel();
             this.quotePriceCancelToken = null;
           }
 
-          if(!this.quotePriceCancelToken) {
+          if (!this.quotePriceCancelToken) {
             this.quotePriceCancelToken = axios.CancelToken.source();
           }
 
@@ -164,18 +166,21 @@ export default class Home extends React.Component {
 
           if (toTokenAmount) {
             const _toAmount = fromGwei(toTokenAmount, toToken.decimals);
-            this.setState({ toAmount: _toAmount, gasFee: estimatedGas, isLoading: false });
+            this.setState({
+              toAmount: _toAmount,
+              gasFee: estimatedGas,
+              isLoading: false,
+            });
             this.trackQuotePrices();
             callback && callback();
-          }
-          else {
+          } else {
             this.setState({ toAmount: "", isLoading: false });
           }
         } else {
           this.setState({ toAmount: "", isLoading: false });
         }
       } catch (e) {
-        console.log(e);
+        console.error(e);
       }
     });
   };
@@ -183,20 +188,19 @@ export default class Home extends React.Component {
   handleAmountChange = (amount, key) => {
     this.setState({ [key]: amount }, async () => {
       const { fromAmount, fromToken, toToken } = this.state;
-      if(key === 'fromAmount' && fromAmount ) {
+      if (key === "fromAmount" && fromAmount) {
         this.checkApprovalDebounced();
       }
-      
+
       if (fromToken && toToken && fromAmount) {
         this.getQuoteForTokenPair();
-      }
-      else if(!fromAmount) {
-        if(this.quotePriceCancelToken){ 
+      } else if (!fromAmount) {
+        if (this.quotePriceCancelToken) {
           //cancel existing request
           this.quotePriceCancelToken.cancel();
           this.quotePriceCancelToken = null;
         }
-        this.setState({ toAmount : '' });
+        this.setState({ toAmount: "" });
       }
     });
   };
@@ -209,7 +213,7 @@ export default class Home extends React.Component {
       fromToken.address.toLowerCase() !== POLYGON_TOKEN_ADDRESS
     ) {
       const tokenData = getFromStore(KEY_ALL_TOKEN_LIST)[fromToken.address];
-      if(tokenData && tokenData.isApproved) {
+      if (tokenData && tokenData.isApproved) {
         return;
       }
       this.setState({ isLoading: true });
@@ -218,15 +222,16 @@ export default class Home extends React.Component {
         if (!response.data.isApprovedToken) {
           this.setState({ toApprove: fromToken.address });
         } else {
-          //@todo only put unlimited approvals;
-          const obj = {
-            ...getFromStore(KEY_ALL_TOKEN_LIST)[fromToken.address],
-            isApproved: true
-          };
-          putInStore(KEY_ALL_TOKEN_LIST, {
-            ...getFromStore(KEY_ALL_TOKEN_LIST),
-            [fromToken.address]: obj
-          })
+          if (response.data.limit === "unlimited") {
+            const obj = {
+              ...getFromStore(KEY_ALL_TOKEN_LIST)[fromToken.address],
+              isApproved: true,
+            };
+            putInStore(KEY_ALL_TOKEN_LIST, {
+              ...getFromStore(KEY_ALL_TOKEN_LIST),
+              [fromToken.address]: obj,
+            });
+          }
         }
       } else {
         publish(ADD_NOTIFICATION, {
@@ -234,8 +239,9 @@ export default class Home extends React.Component {
           onlyOnce: true,
           text: "Something went wrong. Refresh the page.",
         });
+        this.setState({ error: true });
       }
-      this.setState({ isLoading: false });
+      this.setState({ isLoading: this.state.isLoading ? true : false });
     }
   };
 
@@ -289,7 +295,10 @@ export default class Home extends React.Component {
 
     if (onlyNumberRegex.test(value) && Number(value) <= MAX_SLIPPAGE_VALUE) {
       if (value === "") {
-        this.setState({ isCustomSlippage : false, slippagePercent: slipageOptions[0] });
+        this.setState({
+          isCustomSlippage: false,
+          slippagePercent: slipageOptions[0],
+        });
       } else {
         this.setState({ isCustomSlippage, slippagePercent: value });
       }
@@ -368,7 +377,11 @@ export default class Home extends React.Component {
     if (isLoading) return;
 
     if (walletStatus.appInstalled && !walletStatus.address) {
-      publish(TRIGGER_WALLET_CONNECT);
+      return publish(TRIGGER_WALLET_CONNECT);
+    }
+
+    if (!walletStatus.appInstalled) {
+      return openUrlInNewTab(METAMASK_INSTALL_URL);
     }
 
     if (toApprove) {
@@ -385,20 +398,24 @@ export default class Home extends React.Component {
           text: `Approve ${fromToken.symbol}`,
         };
         publish(ON_PENDING_TRANSECTION, transectionData);
-        this.onApprovedTokenUnsubscribe = subscribe(ON_TRANSECTION_COMPLETE, async ({ id }) => {
-          if( transectionId === id ) {
-            await setTokenApproved(toApprove, transectionId);
-            this.setState({ toApprove: null, isLoading: false });
-            this.onApprovedTokenUnsubscribe && this.onApprovedTokenUnsubscribe()
+        this.onApprovedTokenUnsubscribe = subscribe(
+          ON_TRANSECTION_COMPLETE,
+          async ({ id }) => {
+            if (transectionId === id) {
+              await setTokenApproved(toApprove, transectionId);
+              this.setState({ toApprove: null, isLoading: false });
+              this.onApprovedTokenUnsubscribe &&
+                this.onApprovedTokenUnsubscribe();
+            }
           }
-        });
+        );
         return;
       } catch (e) {
         publish(ADD_NOTIFICATION, {
           text: "Approval Cancelled",
           status: false,
         });
-        console.log(e);
+        console.error(e);
       }
       this.setState({ isLoading: false });
       return;
@@ -407,17 +424,18 @@ export default class Home extends React.Component {
     if (this.isTransectionValid()) {
       this.setState({ isLoading: true });
       try {
-        const { fromToken, toToken, fromAmount, toAmount, slippagePercent } = this.state;
+        const { fromToken, toToken, fromAmount, toAmount, slippagePercent } =
+          this.state;
         const _amount = getAmountInGwei(fromToken, fromAmount);
         const _toAmount = getAmountInGwei(toToken, toAmount);
 
-        if(this.swapTokenCancelToken) {
+        if (this.swapTokenCancelToken) {
           // cancel existing request
           this.swapTokenCancelToken.cancel();
           this.swapTokenCancelToken = null;
         }
-        
-        if(!this.swapTokenCancelToken) {
+
+        if (!this.swapTokenCancelToken) {
           this.swapTokenCancelToken = axios.CancelToken.source();
         }
 
@@ -449,7 +467,7 @@ export default class Home extends React.Component {
           return this.resetUI();
         }
       } catch (e) {
-        console.log(e);
+        console.error(e);
         publish(ADD_NOTIFICATION, {
           text: "Transection Cancelled",
           status: false,
@@ -463,18 +481,16 @@ export default class Home extends React.Component {
   resetUI = () => {
     this.setState({
       isLoading: false,
-      fromAmount: '',
-      toAmount : '',
-      gasFee: '',
-      fromToken : null,
+      fromAmount: "",
+      toAmount: "",
+      gasFee: "",
+      fromToken: null,
       toToken: null,
-      toApprove: null
+      toApprove: null,
     });
-  }
+  };
 
-  showTransectionSubmittedPopUp = () => {
-
-  }
+  showTransectionSubmittedPopUp = () => {};
 
   handleArrowClick = () => {
     this.setState({

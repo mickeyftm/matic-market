@@ -18,6 +18,7 @@ import { publish } from "./EventBus";
 import { asyncDebounce, noop } from "@/utils/Helpers";
 import { fromGwei, getAmountInGwei } from "@/utils/calc";
 import {
+  ADD_NOTIFICATION,
   ON_ALL_TOKEN_BALANCE_UPDATE,
   ON_WALLET_CONNECT,
   ON_WALLET_USER_ACTION,
@@ -32,7 +33,6 @@ import {
   KEY_WALLET_RAW_BALANCE,
 } from "@/constants/types";
 
-
 export function haveMetaMask() {
   const provider = window.ethereum;
   if (provider) {
@@ -42,31 +42,33 @@ export function haveMetaMask() {
 }
 
 export async function getChainID() {
-  try {
-    const chainId = await window.ethereum.request({ method: "eth_chainId" });
-    return chainId;
-  } catch {}
+  if (haveMetaMask()) {
+    try {
+      const chainId = await window.ethereum.request({ method: "eth_chainId" });
+      return chainId;
+    } catch {}
+  }
   return null;
 }
 
 export async function onWalletConnect(callback) {
-  window.ethereum.on("connect", callback);
+  if (haveMetaMask()) window.ethereum.on("connect", callback);
 }
 
 export async function onWalletDisconnect(callback) {
-  window.ethereum.on("disconnect", callback);
+  if (haveMetaMask()) window.ethereum.on("disconnect", callback);
 }
 
 export async function onWalletAccountsChanged(callback) {
-  window.ethereum.on("accountsChanged", callback);
+  if (haveMetaMask()) window.ethereum.on("accountsChanged", callback);
 }
 
 export async function onWalletChainChanged(callback) {
-  window.ethereum.on("chainChanged", callback);
+  if (haveMetaMask()) window.ethereum.on("chainChanged", callback);
 }
 
 export async function isWalletLinked() {
-  if (await haveMetaMask()) {
+  if (haveMetaMask()) {
     const address =
       getFromStore(KEY_WALLET_ADDRESS) || (await getActiveAccountAddress());
     if (address) {
@@ -78,9 +80,8 @@ export async function isWalletLinked() {
 }
 
 export async function requestWalletPermission(callback = noop) {
-  if (window.ethereum) {
+  if (haveMetaMask()) {
     const isUnlocked = await window.ethereum._metamask.isUnlocked();
-    console.log(isUnlocked);
 
     if (isUnlocked) {
       window.ethereum
@@ -95,7 +96,7 @@ export async function requestWalletPermission(callback = noop) {
           if (accountsPermission) {
             callback();
             publish(ON_WALLET_USER_ACTION, { isWalletLinked: true });
-            console.log("eth_accounts permission successfully requested!");
+            // eth_accounts permission successfully requested!
           }
         })
         .catch((error) => {
@@ -103,7 +104,7 @@ export async function requestWalletPermission(callback = noop) {
           publish(ON_WALLET_USER_ACTION, { isWalletLinked: false });
           if (error.code === 4001) {
             // EIP-1193 userRejectedRequest error
-            console.log("Permissions needed to continue.");
+            // console.log("Permissions needed to continue.");
           } else {
             console.error(error);
           }
@@ -141,40 +142,48 @@ export async function requestWalletPermission(callback = noop) {
           if (error.code === 4001) {
             callback();
             // EIP-1193 userRejectedRequest error
-            console.log("Please connect to MetaMask.");
+            // console.log("Please connect to MetaMask.");
           } else {
             console.error(error);
           }
         });
     }
+  } else {
+    publish(ADD_NOTIFICATION, {
+      status: false,
+      text: "MetaMask not found.",
+    });
   }
 }
 
 export async function getActiveAccountAddress() {
-  try {
-    const accounts = await window.ethereum.request({ method: "eth_accounts" });
-    return accounts[0];
-  } catch {}
+  if (haveMetaMask()) {
+    try {
+      const accounts = await window.ethereum.request({
+        method: "eth_accounts",
+      });
+      return accounts[0];
+    } catch {}
+  }
   return null;
 }
-
 
 export const getSeedForJazzi = (address) => {
   return parseInt(address.substring(2, 10), 16);
 };
 
-
-
 export const getRawBalance = async (decimals = 6) => {
-  try {
-    const address =
-      getFromStore(KEY_WALLET_ADDRESS) || (await getActiveAccountAddress());
-    const balance = await window.ethereum.request({
-      method: "eth_getBalance",
-      params: [address, "latest"],
-    });
-    return fromGwei(balance, 18, decimals);
-  } catch {}
+  if (haveMetaMask()) {
+    try {
+      const address =
+        getFromStore(KEY_WALLET_ADDRESS) || (await getActiveAccountAddress());
+      const balance = await window.ethereum.request({
+        method: "eth_getBalance",
+        params: [address, "latest"],
+      });
+      return fromGwei(balance, 18, decimals);
+    } catch {}
+  }
   return null;
 };
 
@@ -194,16 +203,17 @@ export const addERC20TokenToWallet = async (token) => {
     });
 
     if (wasAdded) {
-      console.log("Thanks for your interest!");
+      // console.log("Thanks for your interest!");
     } else {
-      console.log("Your loss!");
+      // console.log("Your loss!");
     }
   } catch (error) {
-    console.log(error);
+    console.error(error);
   }
 };
 
 export async function approveToken(tokenAddress) {
+  if (!haveMetaMask()) return null;
   if (tokenAddress.toLowerCase() === POLYGON_TOKEN_ADDRESS) return true;
 
   //fetch transection to approve
@@ -244,18 +254,22 @@ export async function swapTokens(
   slippage,
   cancelToken = null
 ) {
+  if (!haveMetaMask()) return null;
   const walletAddress =
     getFromStore(KEY_WALLET_ADDRESS) || (await getActiveAccountAddress());
-  
-  const { data } = await axios.post(SWAP_TOKEN, {
-    fromTokenAddress,
-    toTokenAddress,
-    fromAddress: walletAddress,
-    amount,
-    slippage,
-  }, { cancelToken });
 
-  console.log(data);
+  const { data } = await axios.post(
+    SWAP_TOKEN,
+    {
+      fromTokenAddress,
+      toTokenAddress,
+      fromAddress: walletAddress,
+      amount,
+      slippage,
+    },
+    { cancelToken }
+  );
+
   if (data.success) {
     let _gas = "0x" + Number(data.data.tx.gas).toString(16);
     let _value = "0x" + Number(data.data.tx.value).toString(16);
@@ -299,7 +313,7 @@ export async function waitForTransection(
       let timer;
       timer = setInterval(async () => {
         try {
-          const Moralis = await import('@/utils/Moralis');
+          const Moralis = await import("@/utils/Moralis");
           const status = await Moralis.getTransectionStatus(transectionId);
           if (status) {
             clearInterval(timer);
@@ -320,7 +334,7 @@ export async function waitForTransection(
 export async function getApprovalForToken(token, amount) {
   const walletAddress =
     getFromStore(KEY_WALLET_ADDRESS) || (await getActiveAccountAddress());
-  
+
   const amountInGwei = getAmountInGwei(token, amount);
   const { data } = await axios.post(FETCH_APPROVED_TOKEN, {
     walletAddress,
@@ -331,15 +345,22 @@ export async function getApprovalForToken(token, amount) {
   return data;
 }
 
-
-
-async function getTokenQuoteHelper(fromTokenAddress, toTokenAddress, amount, cancelToken = null) {
+async function getTokenQuoteHelper(
+  fromTokenAddress,
+  toTokenAddress,
+  amount,
+  cancelToken = null
+) {
   try {
-    const { data } = await axios.post(FETCH_TOKEN_QUOTE, {
-      fromTokenAddress,
-      toTokenAddress,
-      amount,
-    }, { cancelToken });
+    const { data } = await axios.post(
+      FETCH_TOKEN_QUOTE,
+      {
+        fromTokenAddress,
+        toTokenAddress,
+        amount,
+      },
+      { cancelToken }
+    );
 
     return {
       toTokenAmount: data.data.toTokenAmount,
@@ -416,7 +437,7 @@ export const gatherAllTokenBalances = async () => {
   const address =
     getFromStore(KEY_WALLET_ADDRESS) || (await getActiveAccountAddress());
   if (address) {
-    const Moralis = await import('@/utils/Moralis');
+    const Moralis = await import("@/utils/Moralis");
     const allTokenBalance = await Moralis.getAllERC20Tokens(address);
     const balances = {};
 

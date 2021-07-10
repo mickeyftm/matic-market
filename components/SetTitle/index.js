@@ -7,11 +7,11 @@ export const SetTitle = ({ title, description }) => {
             <meta name="description" content={description} />
             <meta property="og:title" content={title} />
             <meta property="og:description" content={description} />
-            
             {/* @todo add a url here */}
             {/* <meta property="og:url" content="" /> */}
             <meta property="og:type" content="website" />
             <link rel="icon" href="/favicon.ico" />
+            <link rel="manifest" href="/site.webmanifest" />
         </Head>
     );
 };

@@ -27,6 +27,8 @@
     align-items: center;
     justify-content: center;
     font-size: 18px;
+    margin-left: 10px;
+    margin-bottom: 10px;
 }
 
 .lssHeadingMain > span {
@@ -37,7 +39,7 @@
     border: 1px solid var(--border-color);
     font-size: 18px;
     width: 100%;
-    padding: 15px;
+    padding: 12px;
     border-radius: 30px;
     outline: none;
 }
