@@ -9,6 +9,7 @@ import {
   switchToPolygonSafely,
   getSeedForJazzi,
   haveMetaMask,
+  gatherAllTokenBalances,
 } from "@/utils/Accounts";
 import { useCallback, useEffect, useState } from "react";
 import { publish, subscribe } from "@/utils/EventBus";
@@ -58,6 +59,7 @@ export const Wallet = () => {
       setChain(data);
       if (data.address) {
         getLatestBalance();
+        gatherAllTokenBalances();
       }
     });
 
@@ -134,7 +136,11 @@ export const Wallet = () => {
     if (wallet) {
       getLatestBalance();
     }
-    const unsubscribe = subscribe(ON_TRANSECTION_COMPLETE, getLatestBalance);
+    
+    const unsubscribe = subscribe(ON_TRANSECTION_COMPLETE, () => {
+      getLatestBalance();
+      gatherAllTokenBalances();
+    });
 
     return () => {
       unsubscribe();
@@ -148,7 +154,7 @@ export const Wallet = () => {
     return (
       <div className={styles.popup}>
         <button onClick={onBtnClick} className={styles.popupBtn}>
-          <span>{"MetaMask"}</span>
+          <span>{"Connect MetaMask"}</span>
           <Image
             width={28}
             height={28}
