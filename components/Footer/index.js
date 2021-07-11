@@ -1,4 +1,4 @@
-import { APP_VERSION, REDDIT_HANDLE, TWITTER_HANDLE } from '@/constants/globals';
+import { APP_VERSION, REDDIT_HANDLE, TELEGRAM_HANDLE, TWITTER_HANDLE } from '@/constants/globals';
 import Image from 'next/image';
 import styles from './style.module.css';
 import { Icon } from '@/components/Icon';
@@ -9,6 +9,9 @@ export const Footer = () => {
         <div className={styles.social}>
             <a href={TWITTER_HANDLE} target={'_blank'} rel="noreferrer">
               <Icon width={22} height={22} name={'TWITTER'} />
+            </a>
+            <a href={TELEGRAM_HANDLE} target={'_blank'} rel="noreferrer">
+              <Icon width={22} height={22} name={'SEND'} />
             </a>
             <a href={REDDIT_HANDLE} target={'_blank'} rel="noreferrer">
               <Icon width={22} height={22} name={'REDDIT'} />

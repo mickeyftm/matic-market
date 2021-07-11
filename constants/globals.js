@@ -1,5 +1,5 @@
 export const APP_NAME = "MaticMarket";
-export const APP_VERSION = "1.0.2-beta-38";
+export const APP_VERSION = "1.0.2-beta-41";
 export const APP_DESCRIPTION = `${APP_NAME} is a permissionless decentralized exchange aka DEX. It is based on Ethereum, powered by Polygon previously known as Matic Network's Layer 2 scalability infrastructure. By utilizing Layer 2 of polygon for transactions, ${APP_NAME} users will be able to trade any ERC20 token at lightning-fast speed at near-zero gas/fee cost.`;
 export const APP_BRANDING = "Made with ❤️ for YOU";
 
@@ -28,6 +28,10 @@ export const NOTIFICATION_STAND_BY_TIME = 6000;
 
 export const TWITTER_HANDLE = "https://twitter.com/marketmatic";
 export const REDDIT_HANDLE = "https://www.reddit.com/r/maticmarket/";
+export const TELEGRAM_HANDLE = "https://t.me/maticmarket";
+
+export const TRANSAK_API_KEY_STAGING = '26d33433-8275-4fdc-91b1-daf6ee9af8f8';
+export const TRANSAK_API_KEY_PRODUCTION = 'fefa7c10-5fa8-45a9-9a7a-6ba5fde50d89';
 
 export const SPENDER_ADDRESS = "0x11111112542d85b3ef69ae05771c2dccff4faa26";
 

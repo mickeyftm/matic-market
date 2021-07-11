@@ -11,3 +11,6 @@ export const FETCH_CONTRACT_DETAILS= '/api/getContractDetails';
 export const METAMASK_INSTALL_URL = 'https://metamask.io/'
 
 export const PUBLIC_HTTP_PROVIDER = "https://rpc-mainnet.maticvigil.com";
+
+export const TRANSAK_BASE_URL = 'https://global.transak.com?apiKey=';
+export const TRANSAK_STAGING_BASE_URL = 'https://staging-global.transak.com??apiKey=';
