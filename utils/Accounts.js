@@ -373,6 +373,7 @@ async function getTokenQuoteHelper(
   amount,
   cancelToken = null
 ) {
+  const address = getFromStore(KEY_WALLET_ADDRESS) || null;
   try {
     const { data } = await axios.post(
       FETCH_TOKEN_QUOTE,
@@ -380,6 +381,7 @@ async function getTokenQuoteHelper(
         fromTokenAddress,
         toTokenAddress,
         amount,
+        address
       },
       { cancelToken }
     );

@@ -51,6 +51,12 @@ export const getHelpTopic = async (topicId) => {
 	return topic;
 }
 
+export const getTransectionCount = async (address) => {
+	const collection = _DB_INSTANCE_.collection(Collections.COLLECTION_LOGS);
+	const transections = await collection.find({ event : 'ON_TRANSECTION_COMPLETE', "transection.address": {"$eq" : address, "$exists" : true } }).count();
+	return transections;
+}
+
 export const addWalletTokenAddressPair = async (walletAddress, tokenAddress, transectionId) => {
 	const collection = _DB_INSTANCE_.collection(Collections.COLLECTION_APPROVALS);
 	return await collection.insertOne({

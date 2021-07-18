@@ -13,9 +13,9 @@ export const Footer = () => {
             <a href={TELEGRAM_HANDLE} target={'_blank'} rel="noreferrer">
               <Icon width={22} height={22} name={'SEND'} />
             </a>
-            <a href={REDDIT_HANDLE} target={'_blank'} rel="noreferrer">
+            {/* <a href={REDDIT_HANDLE} target={'_blank'} rel="noreferrer">
               <Icon width={22} height={22} name={'REDDIT'} />
-            </a>
+            </a> */}
         </div>
         <a
           href="https://polygon.technology/"
@@ -36,7 +36,8 @@ export const Footer = () => {
 
         <div className={styles.version}>
           <span>
-            {`Version ${APP_VERSION}`}
+            <b>⦿</b>
+            {`${APP_VERSION}`}
           </span>
         </div>
 	  </footer>

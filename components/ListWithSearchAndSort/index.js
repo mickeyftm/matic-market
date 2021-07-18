@@ -3,6 +3,7 @@ import Image from "next/image";
 import styles from "./style.module.css";
 import { Spinner } from "@/components/Spinner";
 import { Icon } from "@/components/Icon";
+import { IconWithPopOver } from "@/components/IconWithPopOver";
 import { addClasses, noop } from "@/utils/Helpers";
 import { fromGwei } from "@/utils/calc";
 import { addERC20TokenToWallet } from "@/utils/Accounts";
@@ -28,6 +29,7 @@ export const ListWithSearchAndSort = ({
   const [isLoading, setLoading] = useState(false);
   const [listItems, setListItems] = useState([]);
   const [eventCount, setEventCount] = useState(0);
+  const [isPopOverOpen, setPopOverOpen] = useState(false);
 
   useEffect(() => {
     if (subscribeEvent) {
@@ -109,20 +111,21 @@ export const ListWithSearchAndSort = ({
     addERC20TokenToWallet(token);
   };
 
+  const handlePopover = (isOpen) => {
+    setPopOverOpen(isOpen);
+  }
+
   return (
     <div className={addClasses([styles.lssContainer, className])}>
       <div className={styles.lssHeading}>
         <h3 className={styles.lssHeadingMain}>
           {title}
-          <span>
-            <Image
-              className={styles.lssHelpIcon}
-              width={16}
-              height={16}
-              src={"/images/help-circle.svg"}
-              alt={"Help"}
-            />
-          </span>
+          <div onMouseEnter={() => handlePopover(true)} onMouseLeave={() => handlePopover(false)}>
+              <IconWithPopOver
+                content={'Find a ERC20 token by searching by name or symbol or by its contract address.'}
+                showContent={isPopOverOpen}
+              />
+          </div>
         </h3>
         {closeOverlay && (
           <span onClick={onCloseIconClick}>

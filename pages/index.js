@@ -71,6 +71,7 @@ class Home extends React.Component {
       },
       error: false,
       isLoading: false,
+      isPopOverOpen : false
     };
   }
 
@@ -514,6 +515,10 @@ class Home extends React.Component {
     });
   };
 
+  handlePopover = (isPopOverOpen) => {
+    this.setState({ isPopOverOpen });
+  }
+
   render() {
     const {
       slippagePercent,
@@ -575,7 +580,12 @@ class Home extends React.Component {
             <div className={homeStyles.slippage}>
               <div>
                 <span>{"Slippage tolerance"}</span>
-                <IconWithPopOver />
+                <div onMouseEnter={() => this.handlePopover(true)} onMouseLeave={() => this.handlePopover(false)}>
+                  <IconWithPopOver
+                    content={'Your transection will revert automatically if prices drops by this much percentage.'}
+                    showContent={this.state.isPopOverOpen}
+                  />
+                </div>
               </div>
               {slipageOptions.map((slip) => {
                 return (
