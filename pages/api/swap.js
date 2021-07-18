@@ -1,4 +1,4 @@
-import { CHARGED_TRANSECTION_LIMIT, FEE_CHARGING_ACCOUNT, PER_TRANSECTION_FEE } from "@/constants/globals";
+import { CHARGED_TRANSECTION_LIMIT, FEE_CHARGING_ACCOUNT, LOWEST_PER_TRANSECTION_FEE, PER_TRANSECTION_FEE } from "@/constants/globals";
 import { getTransectionCount, initDB } from "@/utils/db";
 import axios from "axios";
 
